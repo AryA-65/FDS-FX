@@ -1,6 +1,16 @@
 # FDS-FX | JavaFX Fluid Dynamic Simulator
-JavaFX's most advanced and most simple computational fluid dynamic simulator with a 2D and 3D viewer.
+JavaFX Computational Fluid Dynamics Simulator is a simple 2D and 3D fluid dynamics simulator.
 
-Dev Logs
-0 - Template Title - Ares - 26/10/2024
-Every time work is done on the project, logs will be added here in this manner and briefly mention problems, things to do and progress made.
+## Description
+This project has been inspired by ***Ten Minute Physics*** and is a tweaked version of the fluidSim project with added features. FDS-FX is capable of importing 3D objects and looking at fluid behaviour in 2D and 3D.
+
+## Installation
+
+## To Do
+
+
+## Version Control
+|Version|Date|Decription|Features|Bugs|
+|-------|----|----------|--------|----|
+|V0.1|11/11/2024|Basic Simulation with Circle|Simulation with circle. Able to view: pressure, streamlines, smoke, fps and vectores.|Simulation doesn't work properly outside or near the perimeter of canvas. Circle reinitialisation doesn't change fluid sim until dragged.|
+|Initial Commit|26/10/2024|Initial Commit|NaN|Nan|
