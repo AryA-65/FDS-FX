@@ -20,7 +20,7 @@ Many, many things. Add:
 ## Version Control
 |Version|Date|Decription|Features|Bugs|
 |-------|----|----------|--------|----|
-|V0.1|11/11/2024|Basic Simulation with Circle|Simulation with circle. Able to view: pressure, streamlines, smoke, fps and vectores.|* Simulation doesn't work properly outside or near the perimeter of canvas.<br>* Circle reinitialisation doesn't change fluid sim until dragged.|
+|V0.1|11/11/2024|Basic Simulation with Circle|Simulation with circle. Able to view: pressure, streamlines, smoke, fps and vectores.|- Simulation doesn't work properly outside or near the perimeter of canvas.<br>- Circle reinitialisation doesn't change fluid sim until dragged.|
 |Initial Commit|26/10/2024|Initial Commit|NaN|Nan|
 
 ## Sources
