@@ -1,8 +1,5 @@
 # FDS-FX | JavaFX Fluid Dynamic Simulator
-### JavaFX Fluid Dynamics Simulator is a simple 2D and 3D Computational fluid dynamics simulator.
-
-## Description
-This project has been inspired by [***Ten Minute Physics***](https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/17-fluidSim.html) and is a tweaked version of the fluidSim project with added features. FDS-FX is capable of importing 3D objects and looking at fluid behaviour in 2D and 3D.
+### JavaFX Fluid Dynamics Simulator is a simple computational fluid dynamics simulator inspired by [***Ten Minute Physics***](https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/17-fluidSim.html) and is a tweaked version of the fluidSim project with added features.
 
 ## Installation
 **To be added in the near future**
