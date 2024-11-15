@@ -21,6 +21,7 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static project.main.Main.V_FIELD;
 
@@ -74,14 +75,18 @@ public class Main extends Application {
 
     private Canvas canvas;
     private GraphicsContext c;
-    private final float simHeight = 1.1f;
+    private final float simHeight = 1.01f;
     private float cScale;
     private float simWidth;
+    private float simDepth;
     protected static int cnt = 0;
     private Fluid fluid;
     private CanvasScene cScene;
     private int framesCount;
-    private long lastTime;
+    private long lastTime = 0;
+
+    //test code
+    private ScheduledExecutorService scheduler;
 
     @Override
     public void start(Stage primaryStage) {
@@ -103,13 +108,31 @@ public class Main extends Application {
         objRadSlider.setShowTickLabels(true);
         objRadSlider.setShowTickMarks(true);
         objRadSlider.setMajorTickUnit(5);
-//        objRadSlider.snapToTicksProperty();
+
+        Slider iterSlider = new Slider(0, 100, 40);
+        Slider resSlider = new Slider(0, 500, 100);
+
+        iterSlider.setShowTickLabels(true);
+        iterSlider.setShowTickMarks(true);
+        iterSlider.setMajorTickUnit(10);
+
+        resSlider.setShowTickLabels(true);
+        resSlider.setShowTickMarks(true);
+        resSlider.setMajorTickUnit(10);
+
+
 
         Label fpsLabel = new Label("FPS: 0");
 
         HBox buttonBox = new HBox(10, showStreamlineBtn, showPressureBtn, showVelocityBtn, showSmokeBtn, pauseBtn, objRadSlider, fpsLabel);
         buttonBox.setAlignment(Pos.CENTER);
-        VBox sceneBox = new VBox(buttonBox, root);
+        HBox simOptBox = new HBox(10, iterSlider, resSlider);
+        simOptBox.setAlignment(Pos.CENTER);
+
+        VBox topVbox = new VBox(buttonBox, simOptBox);
+        topVbox.setAlignment(Pos.CENTER);
+
+        VBox sceneBox = new VBox(topVbox, root);
 
         Scene scene = new Scene(sceneBox, WIDTH, HEIGHT);
         primaryStage.setScene(scene);
@@ -117,18 +140,20 @@ public class Main extends Application {
         primaryStage.show();
 
         this.cScene = new CanvasScene();
-        setupScene(1);
+        setupScene(1, 100, 40);
 
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-                update();
+                simulate();
 
                 double deltaTime = (now - lastTime) / 1_000_000_000.0;
                 lastTime = now;
 
                 double fps = 1.0 / deltaTime;
                 fpsLabel.setText("FPS: " + String.format("%.2f", fps));
+
+                draw();
             }
         };
         timer.start();
@@ -157,28 +182,34 @@ public class Main extends Application {
             CanvasScene.obstacleRadius = (float) (objRadSlider.getValue() / 100);
         });
 
+        resSlider.setOnMouseReleased(e -> {
+           setupScene(1, (int) resSlider.getValue(), (int) iterSlider.getValue());
+        });
+
+        iterSlider.setOnMouseReleased(e -> {
+            setupScene(1, (int) resSlider.getValue(), (int) iterSlider.getValue());
+        });
+
         canvas.setOnMousePressed(this::startDrag);
         canvas.setOnMouseDragged(this::drag);
     }
 
-    private void setupScene(int sceneNr) {
+    private void setupScene(int sceneNr, int resolution, int numIters) {
         CanvasScene.sceneNr = sceneNr;
         CanvasScene.obstacleRadius = 0.15f;
         CanvasScene.overRelaxation = 1.9f;
 
         CanvasScene.dt = 1.0f / 60.0f;
-        CanvasScene.numIters = 40;
-
-        int res = 100;
+        CanvasScene.numIters = numIters;
 
         if (sceneNr == 0)
-            res = 50;
+            resolution = 50;
         else if (sceneNr == 3)
-            res = 200;
+            resolution = 200;
 
         float domainHeight = 1.0f;
         float domainWidth = domainHeight / simHeight * simWidth;
-        float h = domainHeight / res;
+        float h = domainHeight / resolution;
 
         int numX = (int) (domainWidth / h);
         int numY = (int) (domainHeight / h);
@@ -300,11 +331,6 @@ public class Main extends Application {
             fluid.simulate(CanvasScene.dt, CanvasScene.gravity, CanvasScene.numIters);
             CanvasScene.frameNr++;
         }
-    }
-
-    private void update() {
-        simulate();
-        draw();
     }
 
     private void draw() {
