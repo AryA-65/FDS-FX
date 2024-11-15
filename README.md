@@ -8,6 +8,7 @@
 ## To Do
 Many, many things. Add:
 * SVG importation to simulation
+* Seperate simulation time from drawing time (HOW????)
 * Main menu and simulation menu for better user experience
 * 3D rendering with 3D object simulation (biggest side project)
 * Heat transfer (for electronics, vehicles, etc)
@@ -18,7 +19,7 @@ Many, many things. Add:
 ## Version Control
 |Version|Date|Decription|Features|Bugs|
 |-------|----|----------|--------|----|
-|V0.15|14/11/24|Precision Simulation|Added iteration and resolution sliders that can help get more accurate simulations|-**Major:** running project on linux and toggling vectors drops fps from 60fps avg (monitor capped) to around 20-25fps<br> -Not really a bug, but could use optimisation|
+|V0.15|14/11/24|Precision Simulation|Added iteration and resolution sliders that can help get more accurate simulations|-**Major:** running project on less cores or cores with lower clocks and toggling vectors drops fps from 60fps avg (monitor capped) to around 20-25fps<br> -Not really a bug, but could use optimisation|
 |V0.1|11/11/24|Basic Simulation with Circle|Simulation with circle. Able to view: pressure, streamlines, smoke, fps and vectors.|- Simulation doesn't work properly outside or near the perimeter of canvas.<br>- Circle reinitialisation doesn't change fluid sim until dragged.|
 |Initial Commit|26/10/2024|Initial Commit|NaN|Nan|
 
