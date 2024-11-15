@@ -17,7 +17,7 @@ Many, many things. Add:
 ## Version Control
 |Version|Date|Decription|Features|Bugs|
 |-------|----|----------|--------|----|
-|V0.15|14/11/24|Precision Simulation|Added iteration and resolution sliders that can help get more accurate simulations|-**Major:** runnnig project on linux and toggling vectors drops fps from 60fps avg (monitor capped) to around 20-25fps<br> -Not really a bug, but could use optimisation|
+|V0.15|14/11/24|Precision Simulation|Added iteration and resolution sliders that can help get more accurate simulations|-**Major:** running project on linux and toggling vectors drops fps from 60fps avg (monitor capped) to around 20-25fps<br> -Not really a bug, but could use optimisation|
 |V0.1|11/11/24|Basic Simulation with Circle|Simulation with circle. Able to view: pressure, streamlines, smoke, fps and vectores.|- Simulation doesn't work properly outside or near the perimeter of canvas.<br>- Circle reinitialisation doesn't change fluid sim until dragged.|
 |Initial Commit|26/10/2024|Initial Commit|NaN|Nan|
 
