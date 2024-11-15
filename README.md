@@ -10,7 +10,7 @@ Many, many things. Add:
 * Main menu and simulation menu for better user experience
 * 3D rendering with 3D object simulation (biggest side project)
 * Heat transfer (for electronics, vehicles, etc)
-* Higher Resolution Simulation (won't be real time, will be heavily GPU entensive, show be playback possible) ![10%](https://progress-bar.xyz/10)
+* Higher Resolution Simulation (won't be real time, will be heavily GPU entensive, should be playback possible) ![10%](https://progress-bar.xyz/10)
 * Suggestions:
   * ------
 
