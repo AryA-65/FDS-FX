@@ -1,30 +1,46 @@
 package project.main;
 
+import com.interactivemesh.jfx.importer.Importer;
+import com.interactivemesh.jfx.importer.obj.ObjModelImporter;
 import javafx.animation.AnimationTimer;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.geometry.Point3D;
 import javafx.geometry.Pos;
-import javafx.scene.Scene;
+import javafx.scene.*;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
-import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.Paint;
-import javafx.scene.text.Font;
+import javafx.scene.paint.PhongMaterial;
+import javafx.scene.shape.Box;
+import javafx.scene.shape.MeshView;
+import javafx.scene.shape.TriangleMesh;
+import javafx.scene.transform.Rotate;
+import javafx.scene.transform.Translate;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.List;
 
-import static project.main.Main.V_FIELD;
-
+//TEST code for future auto resolution/iteration settings
 //public class Main extends Application {
 //
 //
@@ -66,6 +82,80 @@ import static project.main.Main.V_FIELD;
 //
 //}
 
+//public class Main extends Application {
+//    public static void main(String[] args) {
+//        launch(args);
+//    }
+//
+//    @Override
+//    public void start(Stage primaryStage) {
+//        PerspectiveCamera camera = new PerspectiveCamera(true);
+//        camera.setTranslateZ(-20);
+//
+////        Group model = loadModel(ClassLoader.getSystemResource("Scooter-smgrps.obj"));
+////        Group model = loadModel(ClassLoader.getSystemResource("bugatti.obj"));
+//        Group model = null;
+//
+//        FileChooser fileChooser = new FileChooser();
+//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ObjModel", "*.obj"));
+//
+//        File selectedFile = fileChooser.showOpenDialog(primaryStage);
+//
+//        if (selectedFile != null) {
+//            try {
+//                model = loadModel(selectedFile.toURI().toURL());
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//
+//        if (model != null) {
+//            model.getTransforms().add(new Rotate(90, Rotate.Y_AXIS));
+//        }
+//
+////        try {
+////            model = loadModel(new File("C:\\Users\\The Workstation\\Downloads\\jzb865er6v-IronMan\\IronMan\\IronMan.obj").toURI().toURL());
+////        } catch (Exception e) {
+////            e.printStackTrace();
+////        }
+//
+////        System.out.println(model);
+//
+//        Group root = new Group(model);
+//
+//        Scene scene = new Scene(root, 1280, 720, true, SceneAntialiasing.BALANCED);
+//        scene.setCamera(camera);
+//        scene.setFill(Color.LIGHTGRAY);
+//
+//        primaryStage.setScene(scene);
+//        primaryStage.show();
+//    }
+//
+//    public Group loadModel(URL url) {
+//        if (url != null) {
+//            System.out.println("balls");
+//        }
+//
+//        Group modelRoot = new Group();
+//
+//        ObjModelImporter importer = new ObjModelImporter();
+//
+//        importer.read(url);
+//
+//        for (MeshView meshView : importer.getImport()) {
+//            modelRoot.getChildren().add(meshView);
+//        }
+//
+//        if (modelRoot != null) {
+//            System.out.println("balls1");
+//        }
+//
+//        return modelRoot;
+//    }
+//
+//}
+//end of test code
+
 public class Main extends Application {
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
@@ -75,7 +165,7 @@ public class Main extends Application {
 
     private Canvas canvas;
     private GraphicsContext c;
-    private final float simHeight = 1.01f;
+    private final float simHeight = 1.1f;
     private float cScale;
     private float simWidth;
     private float simDepth;
@@ -84,9 +174,6 @@ public class Main extends Application {
     private CanvasScene cScene;
     private int framesCount;
     private long lastTime = 0;
-
-    //test code
-    private ScheduledExecutorService scheduler;
 
     @Override
     public void start(Stage primaryStage) {
@@ -709,7 +796,7 @@ class Fluid {
                     float v = this.v[i * n + j];
                     x = x - dt * u;
                     y = y - dt * v;
-                    v = this.sampleField(x, y, V_FIELD);
+                    v = this.sampleField(x, y, Main.V_FIELD);
                     this.newV[i * n + j] = v;
                 }
             }

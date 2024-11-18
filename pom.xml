@@ -25,6 +25,11 @@
             <artifactId>oshi-core</artifactId>
             <version>6.6.5</version>
         </dependency>
+        <dependency>
+            <groupId>us.ihmc</groupId>
+            <artifactId>jimObjModelImporterJFX</artifactId>
+            <version>0.8</version>
+        </dependency>
     </dependencies>
 
 </project>
