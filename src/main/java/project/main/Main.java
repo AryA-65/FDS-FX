@@ -2,19 +2,27 @@ package project.main;
 
 import com.interactivemesh.jfx.importer.Importer;
 import com.interactivemesh.jfx.importer.obj.ObjModelImporter;
+
+import com.jfoenix.controls.JFXButton;
+
 import javafx.animation.AnimationTimer;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
 import javafx.application.Application;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.geometry.Insets;
 import javafx.geometry.Point3D;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
+import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.HBox;
@@ -28,9 +36,15 @@ import javafx.scene.shape.TriangleMesh;
 import javafx.scene.transform.Rotate;
 import javafx.scene.transform.Translate;
 import javafx.stage.FileChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
+import oshi.SystemInfo;
+import oshi.hardware.GlobalMemory;
+import oshi.hardware.HardwareAbstractionLayer;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -38,6 +52,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 //TEST code for future auto resolution/iteration settings
@@ -51,38 +66,43 @@ import java.util.List;
 //    @Override
 //    public void start(Stage stage) throws Exception {
 //
-////        SystemInfo systemInfo = new SystemInfo();
-////        HardwareAbstractionLayer hardware = systemInfo.getHardware();
-////
-////        //CPU info-----
-////        CentralProcessor cpu = hardware.getProcessor();
-////        System.out.println("CPU Model: " + cpu.getProcessorIdentifier().getName());
-////        System.out.println("CPU Cores: " + cpu.getPhysicalProcessorCount());
-////        System.out.println("Logical CPUs: " + cpu.getLogicalProcessorCount());
-////
-////        //GPU info-----
-////        for (GraphicsCard gpu : hardware.getGraphicsCards()) {
-////            System.out.println("GPU Model: " + gpu.getName());
-////            System.out.println("Total GPU VRAM: " + gpu.getVRam() / (1024 * 1024) + " MB");
-////        }
-////
-////        //RAM info-----
-////        GlobalMemory memory = hardware.getMemory();
-////        long totalMemory = memory.getTotal();
-////        long availableMemory = memory.getAvailable();
-////        long usedMemory = totalMemory - availableMemory;
-////
-////        System.out.println("Total RAM: " + (totalMemory / (1024 * 1024)) + " MB");
-////        System.out.println("Available RAM: " + (availableMemory / (1024 * 1024)) + " MB");
-////        System.out.println("Used RAM: " + (usedMemory / (1024 * 1024)) + " MB");
+//        SystemInfo systemInfo = new SystemInfo();
+//        HardwareAbstractionLayer hardware = systemInfo.getHardware();
 //
-////        stage.setScene();
+//        //CPU info-----
+//        CentralProcessor cpu = hardware.getProcessor();
+//        System.out.println("CPU Model: " + cpu.getProcessorIdentifier().getName());
+//        System.out.println("CPU Cores: " + cpu.getPhysicalProcessorCount());
+//        System.out.println("Logical CPUs: " + cpu.getLogicalProcessorCount());
+//
+//        //GPU info-----
+//        for (GraphicsCard gpu : hardware.getGraphicsCards()) {
+//            System.out.println("GPU Model: " + gpu.getName());
+//            System.out.println("Total GPU VRAM: " + gpu.getVRam() / (1024 * 1024) + " MB");
+//        }
+//
+//        //RAM info-----
+//        GlobalMemory memory = hardware.getMemory();
+//        long totalMemory = memory.getTotal();
+//        long availableMemory = memory.getAvailable();
+//        long usedMemory = totalMemory - availableMemory;
+//
+//        System.out.println("Total RAM: " + (totalMemory / (1024 * 1024)) + " MB");
+//        System.out.println("Available RAM: " + (availableMemory / (1024 * 1024)) + " MB");
+//        System.out.println("Used RAM: " + (usedMemory / (1024 * 1024)) + " MB");
+//
+//        stage.setScene();
 //        stage.show();
 //    }
 //
 //}
-
+//
 //public class Main extends Application {
+//    private double anchorX, anchorY;
+//    private double anchorAngleX = 0, anchorAngley = 0;
+//    private DoubleProperty angleX = new SimpleDoubleProperty(0);
+//    private DoubleProperty angleY = new SimpleDoubleProperty(0);
+//
 //    public static void main(String[] args) {
 //        launch(args);
 //    }
@@ -92,15 +112,12 @@ import java.util.List;
 //        PerspectiveCamera camera = new PerspectiveCamera(true);
 //        camera.setTranslateZ(-20);
 //
-////        Group model = loadModel(ClassLoader.getSystemResource("Scooter-smgrps.obj"));
-////        Group model = loadModel(ClassLoader.getSystemResource("bugatti.obj"));
 //        Group model = null;
 //
 //        FileChooser fileChooser = new FileChooser();
 //        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ObjModel", "*.obj"));
 //
 //        File selectedFile = fileChooser.showOpenDialog(primaryStage);
-//
 //        if (selectedFile != null) {
 //            try {
 //                model = loadModel(selectedFile.toURI().toURL());
@@ -110,20 +127,29 @@ import java.util.List;
 //        }
 //
 //        if (model != null) {
-//            model.getTransforms().add(new Rotate(90, Rotate.Y_AXIS));
+//            model.getTransforms().add(new Rotate(90, new Point3D(0,1,0)));
 //        }
-//
-////        try {
-////            model = loadModel(new File("C:\\Users\\The Workstation\\Downloads\\jzb865er6v-IronMan\\IronMan\\IronMan.obj").toURI().toURL());
-////        } catch (Exception e) {
-////            e.printStackTrace();
-////        }
-//
-////        System.out.println(model);
 //
 //        Group root = new Group(model);
 //
 //        Scene scene = new Scene(root, 1280, 720, true, SceneAntialiasing.BALANCED);
+//
+//        initMouseCont(root, scene, primaryStage);
+//
+//        scene.setOnKeyPressed(e -> {
+//            if (e.getCode() == KeyCode.UP) {
+//                camera.setTranslateY(camera.getTranslateY() - ((double) 1 / 10));
+//            }
+//            if (e.getCode() == KeyCode.DOWN) {
+//                camera.setTranslateY(camera.getTranslateY() + ((double) 1 / 10));
+//            }
+//            if (e.getCode() == KeyCode.LEFT) {
+//                camera.setTranslateX(camera.getTranslateX() - ((double) 1 / 10));
+//            }
+//            if (e.getCode() == KeyCode.RIGHT) {
+//                camera.setTranslateX(camera.getTranslateX() + ((double) 1 / 10));
+//            }
+//        });
 //        scene.setCamera(camera);
 //        scene.setFill(Color.LIGHTGRAY);
 //
@@ -131,23 +157,43 @@ import java.util.List;
 //        primaryStage.show();
 //    }
 //
-//    public Group loadModel(URL url) {
-//        if (url != null) {
-//            System.out.println("balls");
-//        }
+//    public void initMouseCont(Group group, Scene scene, Stage stage) {
+//        Rotate xRotate;
+//        Rotate yRotate;
+//        group.getTransforms().addAll(
+//                xRotate = new Rotate(90, Rotate.X_AXIS),
+//                yRotate = new Rotate(90, Rotate.Y_AXIS)
+//        );
 //
+//        xRotate.angleProperty().bind(angleX);
+//        yRotate.angleProperty().bind(angleY);
+//
+//        scene.setOnMousePressed(e -> {
+//            anchorX = e.getSceneX();
+//            anchorY = e.getSceneY();
+//            anchorAngleX = angleX.get();
+//            anchorAngley = angleY.get();
+//        });
+//
+//        scene.setOnMouseDragged(e -> {
+//            angleX.set(anchorAngleX - (anchorY - e.getSceneY()));
+//            angleY.set(anchorAngley + (anchorX - e.getSceneX()));
+//        });
+//
+//        stage.addEventHandler(ScrollEvent.SCROLL, e -> {
+//            double mov = e.getDeltaY();
+//            group.translateZProperty().set(group.getTranslateZ() - ((double) mov / 10));
+//        });
+//    }
+//
+//    public Group loadModel(URL url) {
 //        Group modelRoot = new Group();
 //
 //        ObjModelImporter importer = new ObjModelImporter();
-//
 //        importer.read(url);
 //
 //        for (MeshView meshView : importer.getImport()) {
 //            modelRoot.getChildren().add(meshView);
-//        }
-//
-//        if (modelRoot != null) {
-//            System.out.println("balls1");
 //        }
 //
 //        return modelRoot;
@@ -174,6 +220,16 @@ public class Main extends Application {
     private CanvasScene cScene;
     private int framesCount;
     private long lastTime = 0;
+    private LinkedList<SaveSim> savedFrames;
+    private int maxSimDur = 0; //later for memory usage and available memory
+    private int simDur = 0;
+    private boolean isRecording = false;
+    private int resolution = 100;
+    private int numIter = 40;
+    private long recordInitNow;
+    private ImageView imgView;
+    private GraphicsContext gc;
+    private int numRecordFrames = 0;
 
     @Override
     public void start(Stage primaryStage) {
@@ -184,6 +240,8 @@ public class Main extends Application {
 
         StackPane root = new StackPane();
         root.getChildren().add(canvas);
+
+        System.out.println(recordInitNow);
 
         Button showStreamlineBtn = new Button("Show Streamline");
         Button showPressureBtn = new Button("Show Pressure");
@@ -196,8 +254,8 @@ public class Main extends Application {
         objRadSlider.setShowTickMarks(true);
         objRadSlider.setMajorTickUnit(5);
 
-        Slider iterSlider = new Slider(0, 100, 40);
-        Slider resSlider = new Slider(0, 500, 100);
+        Slider iterSlider = new Slider(0, 100, numIter);
+        Slider resSlider = new Slider(0, 500, resolution);
 
         iterSlider.setShowTickLabels(true);
         iterSlider.setShowTickMarks(true);
@@ -207,13 +265,32 @@ public class Main extends Application {
         resSlider.setShowTickMarks(true);
         resSlider.setMajorTickUnit(10);
 
-
-
         Label fpsLabel = new Label("FPS: 0");
+        Label simTimeLabel = new Label("Sim Time: 0ms");
+        Button startSim = new Button("Start Simulation");
+        Button playRec = new Button("Play Recording");
+//        Button loadObs = new Button("Load Obstacle");
+
+        playRec.setDisable(true);
+        playRec.setVisible(false);
+
+        startSim.setOnAction(e -> {
+            CanvasScene.paused = true;
+            showRecordPopUp();
+        });
+
+        playRec.setOnAction(e -> {
+            replay();
+        });
+
+//        loadObs.setOnAction(e -> {
+//            loadImg();
+//        });
 
         HBox buttonBox = new HBox(10, showStreamlineBtn, showPressureBtn, showVelocityBtn, showSmokeBtn, pauseBtn, objRadSlider, fpsLabel);
         buttonBox.setAlignment(Pos.CENTER);
-        HBox simOptBox = new HBox(10, iterSlider, resSlider);
+        HBox simOptBox = new HBox(10, iterSlider, resSlider, simTimeLabel, startSim, playRec);
+//        HBox simOptBox = new HBox(10, iterSlider, resSlider, simTimeLabel, startSim, playRec, loadObs);
         simOptBox.setAlignment(Pos.CENTER);
 
         VBox topVbox = new VBox(buttonBox, simOptBox);
@@ -226,16 +303,34 @@ public class Main extends Application {
         primaryStage.setTitle("Fluid Simulation");
         primaryStage.show();
 
+        System.out.println(isRecording);
+
         this.cScene = new CanvasScene();
-        setupScene(1, 100, 40);
+        setupScene(1, resolution, numIter);
 
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
+//                long simTimeIni = System.nanoTime();
                 simulate();
+//                long simTimeEnd = System.nanoTime();
+//                simTimeLabel.setText("Sim Time: " + ((simTimeEnd - simTimeIni)/1000000.0) + "ms");
+
 
                 double deltaTime = (now - lastTime) / 1_000_000_000.0;
                 lastTime = now;
+
+                if (isRecording) {
+                    savedFrames.add(new SaveSim());
+                    if ((now - recordInitNow) / 1000000000 > simDur) {
+                        isRecording = false;
+                        System.out.println("Recording completed");
+//                        setupScene(1, resolution, numIter);
+//                        replay();
+                        playRec.setVisible(true);
+                        playRec.setDisable(false);
+                    }
+                }
 
                 double fps = 1.0 / deltaTime;
                 fpsLabel.setText("FPS: " + String.format("%.2f", fps));
@@ -270,16 +365,248 @@ public class Main extends Application {
         });
 
         resSlider.setOnMouseReleased(e -> {
-           setupScene(1, (int) resSlider.getValue(), (int) iterSlider.getValue());
+            resolution = (int) resSlider.getValue();
+            System.out.println(resolution + ";" + numIter);
+            setupScene(1, resolution, numIter);
+
         });
 
         iterSlider.setOnMouseReleased(e -> {
-            setupScene(1, (int) resSlider.getValue(), (int) iterSlider.getValue());
+            numIter = (int) iterSlider.getValue();
+            System.out.println(resolution + ";" + numIter);
+            setupScene(1, resolution, numIter);
         });
 
         canvas.setOnMousePressed(this::startDrag);
         canvas.setOnMouseDragged(this::drag);
     }
+
+    private void showRecordPopUp() {
+        //turn simulation to frame based simulation rather than time based
+        Stage popUpStage = new Stage();
+        popUpStage.initModality(Modality.APPLICATION_MODAL);
+        popUpStage.setTitle("Record Simulation");
+
+        //might use for max simulation duration based on available and current system ram size
+//        SystemInfo systemInfo = new SystemInfo();
+//        HardwareAbstractionLayer hardware = systemInfo.getHardware();
+//
+//        GlobalMemory memory = hardware.getMemory();
+//        long availableMemory = memory.getAvailable();
+//
+        simDur = 60;
+
+        Label durLabel = new Label("Duration: ");
+
+        JFXButton infoButton = new JFXButton();
+        ImageView infoImg = new ImageView(new Image(ClassLoader.getSystemResource("images/infoPlaceholderImg.png").toExternalForm()));
+        infoImg.setFitHeight(12);
+        infoImg.setFitWidth(12);
+        infoImg.setPreserveRatio(true);
+
+        infoButton.setGraphic(infoImg);
+        infoButton.setPrefHeight(20);
+        infoButton.setPrefWidth(20);
+
+        TextField preciseDurField = new TextField();
+        preciseDurField.setPrefWidth(75.0);
+        preciseDurField.setPromptText(String.format("%d seconds", simDur));
+        preciseDurField.setOnKeyPressed(e -> {
+            if (e.getCode() == KeyCode.ENTER) {
+                simDur = Integer.parseInt(preciseDurField.getText());
+                isRecording = true;
+                setupScene(1, resolution, numIter);
+                CanvasScene.paused = false;
+                popUpStage.close();
+                savedFrames = new LinkedList<>();
+                recordInitNow = System.nanoTime();
+            }
+        });
+
+        Slider recordDurSlider = new Slider(10, 600, simDur);
+        recordDurSlider.setPrefWidth(175.0);
+        recordDurSlider.valueProperty().addListener(e -> {
+            simDur = (int) recordDurSlider.getValue();
+            preciseDurField.setPromptText(String.format("%2d seconds", simDur));
+        });
+
+        Button confirm = new Button("Confirm and Start Recording");
+        confirm.setOnAction(e -> {
+            simDur = (int) recordDurSlider.getValue();
+            isRecording = true;
+            setupScene(1, resolution, numIter);
+            CanvasScene.paused = false;
+            popUpStage.close();
+            savedFrames = new LinkedList<>();
+            recordInitNow = System.nanoTime();
+        });
+
+        HBox container = new HBox(5, durLabel, recordDurSlider, preciseDurField);
+        container.setAlignment(Pos.CENTER);
+        container.setPadding(new Insets(10));
+
+        preciseDurField.textProperty().addListener(e -> {
+            try {
+                if (!preciseDurField.getText().isEmpty()) container.getChildren().remove(infoButton);
+                simDur = Integer.parseInt(preciseDurField.getText());
+                recordDurSlider.setValue(simDur);
+            } catch (Exception err) {
+                preciseDurField.setPromptText("Invalid Value \"\"");
+                Tooltip.install(infoButton, new Tooltip(err.getMessage()));
+                container.getChildren().add(infoButton);
+//                Tooltip.install(infoButton, new Tooltip("")); //might not even use tooltip, kinda useless
+            }
+        });
+
+        VBox root = new VBox(container, confirm);
+        root.setAlignment(Pos.CENTER);
+
+        Scene popUpScene = new Scene(root, 350, 100);
+
+        popUpStage.setScene(popUpScene);
+        popUpStage.show();
+        popUpStage.setResizable(false);
+        popUpStage.setFullScreen(false);
+        popUpStage.setOnCloseRequest(e -> {CanvasScene.paused = false;});
+    }
+
+    private void replay() {
+        CanvasScene.paused = true;
+        AnimationTimer replayTimer = new AnimationTimer() {
+            int replayIndex = 0;
+
+            @Override
+            public void handle(long now) {
+                if (replayIndex < savedFrames.size()) {
+                    SaveSim frame = savedFrames.get(replayIndex++);
+                    System.arraycopy(frame.u, 0, fluid.u, 0, frame.u.length);
+                    System.arraycopy(frame.v, 0, fluid.v, 0, frame.v.length);
+                    System.arraycopy(frame.p, 0, fluid.p, 0, frame.p.length);
+                    System.arraycopy(frame.m, 0, fluid.m, 0, frame.m.length);
+                    draw();
+                } else {
+                    stop();
+                }
+            }
+        };
+        replayTimer.start();
+    }
+
+    //test code for importing and using images as objects
+    //image scaling in simulation/canvas is off: fits to canvas rather than being to scale
+//    private void loadImg() {
+//        FileChooser fileChooser = new FileChooser();
+//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.svg"));
+//
+//        File selectedObs = fileChooser.showOpenDialog(null);
+//        if (selectedObs != null) {
+//            try {
+////                String fileExtension = selectedObs.getName().substring(selectedObs.getName().lastIndexOf(".") + 1).toLowerCase();
+////                BufferedImage bufferedImage = ImageIO.read(selectedObs); //not needed yet
+//                Image obsImg = new Image(selectedObs.toURI().toString());
+//                gc = c.getCanvas().getGraphicsContext2D();
+//                imgView = new ImageView(obsImg);
+//                imgView.setPreserveRatio(true);
+//                setObstacle(imgView, true);
+//                applyCObs(obsImg);
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
+//
+//    //will be used shortly
+//    private boolean isTransparent(BufferedImage bI) {
+//        int width = bI.getWidth();
+//        int height = bI.getHeight();
+//
+//        for (int x = 0; x < width; x++) {
+//            for (int y = 0; y < height; y++) {
+//                int aplha = (bI.getRGB(x, y) >> 24) & 0xff;
+//                if (aplha < 255) return true;
+//            }
+//        }
+//
+//        return false;
+//    }
+//
+//    private void applyCObs(Image img) {
+//        PixelReader pixelReader = img.getPixelReader();
+//        if (pixelReader == null) return;
+//
+//        int width = (int) img.getWidth();
+//        int height = (int) img.getHeight();
+//
+//        float scaleX = (float) fluid.numX / width;
+//        float scaleY = (float) fluid.numY / height;
+//
+//        for (int x = 0; x < width; x++) {
+//            for (int y = 0; y < height; y++) {
+//                int argb = pixelReader.getArgb(x, y);
+//
+//                int alpha = (argb >> 24) & 0xff;
+//                int red = (argb >> 16) & 0xff;
+//                int green = (argb >> 8) & 0xff;
+//                int blue = (argb) & 0xff;
+//
+//                if (alpha > 0) {
+//                    int flippedY = height - y - 1;
+//
+//                    int gridX = (int) (x * scaleX);
+//                    int gridY = (int) (flippedY * scaleY);
+//
+//                    fluid.s[gridX * fluid.numY + gridY] = 0.0f;
+//                }
+//            }
+//        }
+//    }
+
+//    private void setObstacle(ImageView obstacleImage, boolean reset) {
+//        float vx = 0.0f;
+//        float vy = 0.0f;
+//
+//        // Calculate the obstacle's current position in the simulation grid
+//        float x = (float) (obstacleImage.getTranslateX() + obstacleImage.getFitWidth() / 2);
+//        float y = (float) (obstacleImage.getTranslateY() + obstacleImage.getFitHeight() / 2);
+//
+//        if (!reset) {
+//            vx = (x - CanvasScene.obstacleX) / CanvasScene.dt;
+//            vy = (y - CanvasScene.obstacleY) / CanvasScene.dt;
+//        }
+//
+//        CanvasScene.obstacleX = x;
+//        CanvasScene.obstacleY = y;
+//
+//        // Scale obstacle dimensions to simulation grid
+//        float obstacleWidth = (float) obstacleImage.getFitWidth() / simWidth * fluid.numX;
+//        float obstacleHeight = (float) obstacleImage.getFitHeight() / simHeight * fluid.numY;
+//
+//        int gridWidth = Math.round(obstacleWidth);
+//        int gridHeight = Math.round(obstacleHeight);
+//
+//        // Determine the top-left corner of the obstacle in the grid
+//        int gridStartX = (int) (x / simWidth * fluid.numX) - gridWidth / 2;
+//        int gridStartY = (int) (y / simHeight * fluid.numY) - gridHeight / 2;
+//
+//        // Apply obstacle shape to the simulation grid
+//        for (int i = Math.max(0, gridStartX); i < Math.min(fluid.numX, gridStartX + gridWidth); i++) {
+//            for (int j = Math.max(0, gridStartY); j < Math.min(fluid.numY, gridStartY + gridHeight); j++) {
+//                fluid.s[i * fluid.numY + j] = 0.0f; // Mark as solid
+//                fluid.u[i * fluid.numY + j] = vx;   // Set velocity
+//                fluid.v[i * fluid.numY + j] = vy;
+//
+//                if (CanvasScene.sceneNr == 2) {
+//                    fluid.m[i * fluid.numY + j] = 0.5f + 0.5f * (float) Math.sin(0.1f * CanvasScene.frameNr);
+//                } else {
+//                    fluid.m[i * fluid.numY + j] = 1.0f;
+//                }
+//            }
+//        }
+//
+//        gc.drawImage(imgView.getImage(), gridStartX, gridStartY);
+//
+//        CanvasScene.showObstacle = true;
+//    }
 
     private void setupScene(int sceneNr, int resolution, int numIters) {
         CanvasScene.sceneNr = sceneNr;
@@ -348,6 +675,10 @@ public class Main extends Application {
                 fluid.m[j] = 0.0f;
 
             setObstacle(0.4f, 0.5f, true);
+//            if (imgView == null) {
+//                loadImg();
+//            }
+//            setObstacle(imgView,true);
 
             CanvasScene.gravity = 0.0f;
             CanvasScene.showPressure = false;
@@ -386,7 +717,7 @@ public class Main extends Application {
         CanvasScene.obstacleY = y;
         float r = CanvasScene.obstacleRadius;
         int n = fluid.numY;
-        float cd = (float) (Math.sqrt(2) * fluid.h);
+//        float cd = (float) (Math.sqrt(2) * fluid.h);
 
         for (int i = 1; i < fluid.numX - 2; i++) {
             for (int j = 1; j < fluid.numY - 2; j++) {
@@ -537,6 +868,9 @@ public class Main extends Application {
         }
 
         if (CanvasScene.showObstacle) {
+            //part of the image importation code, still useful though
+            c.setImageSmoothing(true);
+
             float r = CanvasScene.obstacleRadius + f.h;
             c.setFill(CanvasScene.showPressure ? Color.BLACK : Color.rgb(217, 217, 217));
             c.fillOval(cX(CanvasScene.obstacleX - r), cY(CanvasScene.obstacleY + r), 2 * cScale * r, 2 * cScale * r);
@@ -604,16 +938,24 @@ public class Main extends Application {
         float mx = (float) e.getX() / cScale;
         float my = (float) (HEIGHT - e.getY()) / cScale;
         setObstacle(mx, my, true);
+
+        //in testing
+//        setObstacle(imgView, true);
+
     }
 
     private void drag(MouseEvent e) {
         float mx = (float) e.getX() / cScale;
         float my = (float) (HEIGHT - e.getY()) / cScale;
         setObstacle(mx, my, false);
+
+        //in testing
+//        imgView.setTranslateX(mx);
+//        imgView.setTranslateY(my);
+//        setObstacle(imgView, false);
     }
 
-    private void endDrag() {
-    }
+//    private void
 
     public static void main(String[] args) {
         launch(args);
