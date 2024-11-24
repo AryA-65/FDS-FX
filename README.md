@@ -21,7 +21,7 @@ Many, many things. Add:
 * Seperate simulation time from drawing time (HOW????)
 * Main menu and simulation menu for better user experience
 * 3D rendering with 3D object simulation (biggest side project) ![25%](https://progress-bar.xyz/25)
-* Heat transfer (for electronics, vehicles, etc)
+* Heat transfer (for electronics, vehicles, etc), ambient temperature modifier, etc
 * Higher Resolution Simulation (won't be real time, will be heavily GPU entensive, should be playback possible) ![75%](https://progress-bar.xyz/75)
 * Save replay data (JSON, TXT, Custom File Format?)
 * Multithreading 
