@@ -4,7 +4,7 @@
 
 ## JDK Installation
 (**Pictures will be added to make installation easier**)
-1. Go to *https://gluonhq.com/products/javafx/* and choose JavaFX SDK version 17 or 21 for your machine (V21 is backwards compatible with V17, so choice is yours)
+1. Go to *https://gluonhq.com/products/javafx/* and choose JavaFX SDK version 17 or 21 for your machine (V21 is backwards compatible with V17, so the choice is yours)
 2. Download the SDK, unzip from Downloads folder and move into user jdk folder (`C:\Users\user\.jdks` on Windows or `/home/user/.jdks` on Linux)
 3. Open Intellij (more IDE to be added to the installation guide), click on `⋮` and then open 'edit' under configuration
 4. In the newly opened tab, click on modify options and select 'Add VM Option'
