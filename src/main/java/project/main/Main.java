@@ -1,19 +1,10 @@
 package project.main;
 
-import com.interactivemesh.jfx.importer.Importer;
-import com.interactivemesh.jfx.importer.obj.ObjModelImporter;
-
 import com.jfoenix.controls.JFXButton;
 
 import javafx.animation.AnimationTimer;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
 import javafx.application.Application;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
-import javafx.geometry.Point3D;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.canvas.Canvas;
@@ -21,39 +12,23 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.image.PixelReader;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.PhongMaterial;
-import javafx.scene.shape.Box;
-import javafx.scene.shape.MeshView;
-import javafx.scene.shape.TriangleMesh;
-import javafx.scene.transform.Rotate;
-import javafx.scene.transform.Translate;
-import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import oshi.SystemInfo;
 import oshi.hardware.GlobalMemory;
 import oshi.hardware.HardwareAbstractionLayer;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 //TEST code for future auto resolution/iteration settings
 //public class Main extends Application {
@@ -200,6 +175,8 @@ import java.util.List;
 //    }
 //
 //}
+
+
 //end of test code
 
 public class Main extends Application {
@@ -214,22 +191,18 @@ public class Main extends Application {
     private final float simHeight = 1.1f;
     private float cScale;
     private float simWidth;
-    private float simDepth;
+//    private float simDepth; //usefull for 3d
     protected static int cnt = 0;
     private Fluid fluid;
-    private CanvasScene cScene;
     private int framesCount;
     private long lastTime = 0;
     private LinkedList<SaveSim> savedFrames;
-    private int maxSimDur = 0; //later for memory usage and available memory
     private int simDur = 0;
     private boolean isRecording = false;
     private int resolution = 100;
     private int numIter = 40;
-    private long recordInitNow;
     private ImageView imgView;
     private GraphicsContext gc;
-    private int numRecordFrames = 0;
 
     @Override
     public void start(Stage primaryStage) {
@@ -240,8 +213,6 @@ public class Main extends Application {
 
         StackPane root = new StackPane();
         root.getChildren().add(canvas);
-
-        System.out.println(recordInitNow);
 
         Button showStreamlineBtn = new Button("Show Streamline");
         Button showPressureBtn = new Button("Show Pressure");
@@ -275,6 +246,7 @@ public class Main extends Application {
         playRec.setVisible(false);
 
         startSim.setOnAction(e -> {
+//            savedFrames = null;
             CanvasScene.paused = true;
             showRecordPopUp();
         });
@@ -303,9 +275,6 @@ public class Main extends Application {
         primaryStage.setTitle("Fluid Simulation");
         primaryStage.show();
 
-        System.out.println(isRecording);
-
-        this.cScene = new CanvasScene();
         setupScene(1, resolution, numIter);
 
         AnimationTimer timer = new AnimationTimer() {
@@ -321,14 +290,17 @@ public class Main extends Application {
                 lastTime = now;
 
                 if (isRecording) {
+                    framesCount++;
                     savedFrames.add(new SaveSim());
-                    if ((now - recordInitNow) / 1000000000 > simDur) {
+                    if (framesCount >= simDur) {
                         isRecording = false;
                         System.out.println("Recording completed");
 //                        setupScene(1, resolution, numIter);
 //                        replay();
                         playRec.setVisible(true);
                         playRec.setDisable(false);
+
+                        framesCount = 0;
                     }
                 }
 
@@ -366,14 +338,12 @@ public class Main extends Application {
 
         resSlider.setOnMouseReleased(e -> {
             resolution = (int) resSlider.getValue();
-            System.out.println(resolution + ";" + numIter);
             setupScene(1, resolution, numIter);
-
+            System.out.println("Resolution:" + resolution);
         });
 
         iterSlider.setOnMouseReleased(e -> {
             numIter = (int) iterSlider.getValue();
-            System.out.println(resolution + ";" + numIter);
             setupScene(1, resolution, numIter);
         });
 
@@ -382,55 +352,57 @@ public class Main extends Application {
     }
 
     private void showRecordPopUp() {
-        //turn simulation to frame based simulation rather than time based
         Stage popUpStage = new Stage();
         popUpStage.initModality(Modality.APPLICATION_MODAL);
-        popUpStage.setTitle("Record Simulation");
+        popUpStage.setTitle("Recording Settings");
 
-        //might use for max simulation duration based on available and current system ram size
-//        SystemInfo systemInfo = new SystemInfo();
-//        HardwareAbstractionLayer hardware = systemInfo.getHardware();
-//
-//        GlobalMemory memory = hardware.getMemory();
-//        long availableMemory = memory.getAvailable();
-//
-        simDur = 60;
+        long[] memUsage = memInfo();
+
+        float domainHeight = 1.0f;
+        float domainWidth = domainHeight / simHeight * simWidth;
+        float h = domainHeight / resolution;
+
+        int numX = (int) (domainWidth / h);
+        int numY = (int) (domainHeight / h);
+
+        int maxSimDur = (int) ((memUsage[1] * 0.5) / (4 * 4 * (numY * numX * 1.05)));
+        System.out.printf("Max sim dur: %s\n", maxSimDur);
+
+        simDur = 1024 > maxSimDur ? (int) (maxSimDur * .5) : 1024;
 
         Label durLabel = new Label("Duration: ");
 
-        JFXButton infoButton = new JFXButton();
-        ImageView infoImg = new ImageView(new Image(ClassLoader.getSystemResource("images/infoPlaceholderImg.png").toExternalForm()));
-        infoImg.setFitHeight(12);
-        infoImg.setFitWidth(12);
-        infoImg.setPreserveRatio(true);
-
-        infoButton.setGraphic(infoImg);
-        infoButton.setPrefHeight(20);
-        infoButton.setPrefWidth(20);
+        if (savedFrames != null && !savedFrames.isEmpty()) savedFrames.clear();
 
         TextField preciseDurField = new TextField();
         preciseDurField.setPrefWidth(75.0);
-        preciseDurField.setPromptText(String.format("%d seconds", simDur));
+        preciseDurField.setPromptText(String.format("%d frames", simDur));
         preciseDurField.setOnKeyPressed(e -> {
             if (e.getCode() == KeyCode.ENTER) {
-                simDur = Integer.parseInt(preciseDurField.getText());
+                simDur = Math.min(Integer.parseInt(preciseDurField.getText()), maxSimDur);
                 isRecording = true;
                 setupScene(1, resolution, numIter);
                 CanvasScene.paused = false;
                 popUpStage.close();
                 savedFrames = new LinkedList<>();
-                recordInitNow = System.nanoTime();
             }
         });
 
-        Slider recordDurSlider = new Slider(10, 600, simDur);
+        Slider recordDurSlider = new Slider(10, maxSimDur, simDur);
         recordDurSlider.setPrefWidth(175.0);
         recordDurSlider.valueProperty().addListener(e -> {
             simDur = (int) recordDurSlider.getValue();
-            preciseDurField.setPromptText(String.format("%2d seconds", simDur));
+            preciseDurField.setPromptText(String.format("%2d frames", simDur));
         });
 
-        Button confirm = new Button("Confirm and Start Recording");
+        BorderPane bP = new BorderPane(recordDurSlider);
+        bP.setLeft(new Label("0"));
+        bP.setRight(new Label(String.valueOf(maxSimDur)));
+        BorderPane.setAlignment(bP.getRight(), Pos.CENTER);
+        BorderPane.setAlignment(bP.getLeft(), Pos.CENTER);
+        bP.setPadding(new Insets(10));
+
+        Button confirm = new Button("Confirm");
         confirm.setOnAction(e -> {
             simDur = (int) recordDurSlider.getValue();
             isRecording = true;
@@ -438,30 +410,16 @@ public class Main extends Application {
             CanvasScene.paused = false;
             popUpStage.close();
             savedFrames = new LinkedList<>();
-            recordInitNow = System.nanoTime();
         });
 
-        HBox container = new HBox(5, durLabel, recordDurSlider, preciseDurField);
+        HBox container = new HBox(5, durLabel, bP, preciseDurField);
         container.setAlignment(Pos.CENTER);
-        container.setPadding(new Insets(10));
 
-        preciseDurField.textProperty().addListener(e -> {
-            try {
-                if (!preciseDurField.getText().isEmpty()) container.getChildren().remove(infoButton);
-                simDur = Integer.parseInt(preciseDurField.getText());
-                recordDurSlider.setValue(simDur);
-            } catch (Exception err) {
-                preciseDurField.setPromptText("Invalid Value \"\"");
-                Tooltip.install(infoButton, new Tooltip(err.getMessage()));
-                container.getChildren().add(infoButton);
-//                Tooltip.install(infoButton, new Tooltip("")); //might not even use tooltip, kinda useless
-            }
-        });
-
-        VBox root = new VBox(container, confirm);
+        VBox root = new VBox(5, container, confirm);
         root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(10));
 
-        Scene popUpScene = new Scene(root, 350, 100);
+        Scene popUpScene = new Scene(root);
 
         popUpStage.setScene(popUpScene);
         popUpStage.show();
@@ -472,6 +430,7 @@ public class Main extends Application {
 
     private void replay() {
         CanvasScene.paused = true;
+
         AnimationTimer replayTimer = new AnimationTimer() {
             int replayIndex = 0;
 
@@ -490,6 +449,13 @@ public class Main extends Application {
             }
         };
         replayTimer.start();
+    }
+
+    private long[] memInfo() {
+        SystemInfo systemInfo = new SystemInfo();
+        HardwareAbstractionLayer hardware = systemInfo.getHardware();
+        GlobalMemory memory = hardware.getMemory();
+        return new long[]{memory.getTotal(), memory.getAvailable(), (memory.getTotal() - memory.getAvailable())};
     }
 
     //test code for importing and using images as objects
@@ -656,9 +622,9 @@ public class Main extends Application {
             float inVel = 2.0f;
             for (int i = 0; i < fluid.numX; i++) {
                 for (int j = 0; j < fluid.numY; j++) {
-                    float s = 1.0f;  // fluid
+                    float s = 1.0f;
                     if (i == 0 || j == 0 || j == fluid.numY - 1)
-                        s = 0.0f;  // solid
+                        s = 0.0f;
                     fluid.s[i * n + j] = s;
 
                     if (i == 1) {
@@ -955,8 +921,6 @@ public class Main extends Application {
 //        setObstacle(imgView, false);
     }
 
-//    private void
-
     public static void main(String[] args) {
         launch(args);
     }
@@ -1085,26 +1049,22 @@ class Fluid {
         float sx = 1.0f - tx;
         float sy = 1.0f - ty;
 
-        float val = sx * sy * f[x0 * n + y0] +
+        return sx * sy * Objects.requireNonNull(f)[x0 * n + y0] +
                 tx * sy * f[x1 * n + y0] +
                 tx * ty * f[x1 * n + y1] +
                 sx * ty * f[x0 * n + y1];
-
-        return val;
     }
 
     public float avgU(int i, int j) {
         int n = this.numY;
-        float u = (this.u[i * n + j - 1] + this.u[i * n + j] +
+        return (this.u[i * n + j - 1] + this.u[i * n + j] +
                 this.u[(i + 1) * n + j - 1] + this.u[(i + 1) * n + j]) * 0.25f;
-        return u;
     }
 
     public float avgV(int i, int j) {
         int n = this.numY;
-        float v = (this.v[(i - 1) * n + j] + this.v[i * n + j] +
+        return (this.v[(i - 1) * n + j] + this.v[i * n + j] +
                 this.v[(i - 1) * n + j + 1] + this.v[i * n + j + 1]) * 0.25f;
-        return v;
     }
 
     public void advectVel(float dt) {

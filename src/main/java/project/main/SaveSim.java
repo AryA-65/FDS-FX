@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 public class SaveSim {
     float[] u, v, p, m;
+    int ballX, ballY;
 
     public SaveSim() {
         this.u = Arrays.copyOf(CanvasScene.fluid.u, CanvasScene.fluid.u.length);
