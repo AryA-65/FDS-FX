@@ -1,10 +1,14 @@
 package project.main;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Arrays;
 
-public class SaveSim {
+public class SaveSim implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     float[] u, v, p, m;
-    int ballX, ballY;
 
     public SaveSim() {
         this.u = Arrays.copyOf(CanvasScene.fluid.u, CanvasScene.fluid.u.length);

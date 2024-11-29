@@ -4,7 +4,10 @@ import com.jfoenix.controls.JFXButton;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleDoubleProperty;
 import javafx.geometry.Insets;
+import javafx.geometry.Point3D;
 import javafx.geometry.Pos;
 import javafx.scene.*;
 import javafx.scene.canvas.Canvas;
@@ -12,21 +15,30 @@ import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.MeshView;
+import javafx.scene.transform.Rotate;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+
 import oshi.SystemInfo;
 import oshi.hardware.GlobalMemory;
 import oshi.hardware.HardwareAbstractionLayer;
 
-import java.util.*;
-import java.util.concurrent.Callable;
+import java.io.*;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -71,127 +83,20 @@ import java.util.concurrent.Executors;
 //    }
 //
 //}
-//
-//public class Main extends Application {
-//    private double anchorX, anchorY;
-//    private double anchorAngleX = 0, anchorAngley = 0;
-//    private DoubleProperty angleX = new SimpleDoubleProperty(0);
-//    private DoubleProperty angleY = new SimpleDoubleProperty(0);
-//
-//    public static void main(String[] args) {
-//        launch(args);
-//    }
-//
-//    @Override
-//    public void start(Stage primaryStage) {
-//        PerspectiveCamera camera = new PerspectiveCamera(true);
-//        camera.setTranslateZ(-20);
-//
-//        Group model = null;
-//
-//        FileChooser fileChooser = new FileChooser();
-//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("ObjModel", "*.obj"));
-//
-//        File selectedFile = fileChooser.showOpenDialog(primaryStage);
-//        if (selectedFile != null) {
-//            try {
-//                model = loadModel(selectedFile.toURI().toURL());
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//
-//        if (model != null) {
-//            model.getTransforms().add(new Rotate(90, new Point3D(0,1,0)));
-//        }
-//
-//        Group root = new Group(model);
-//
-//        Scene scene = new Scene(root, 1280, 720, true, SceneAntialiasing.BALANCED);
-//
-//        initMouseCont(root, scene, primaryStage);
-//
-//        scene.setOnKeyPressed(e -> {
-//            if (e.getCode() == KeyCode.UP) {
-//                camera.setTranslateY(camera.getTranslateY() - ((double) 1 / 10));
-//            }
-//            if (e.getCode() == KeyCode.DOWN) {
-//                camera.setTranslateY(camera.getTranslateY() + ((double) 1 / 10));
-//            }
-//            if (e.getCode() == KeyCode.LEFT) {
-//                camera.setTranslateX(camera.getTranslateX() - ((double) 1 / 10));
-//            }
-//            if (e.getCode() == KeyCode.RIGHT) {
-//                camera.setTranslateX(camera.getTranslateX() + ((double) 1 / 10));
-//            }
-//        });
-//        scene.setCamera(camera);
-//        scene.setFill(Color.LIGHTGRAY);
-//
-//        primaryStage.setScene(scene);
-//        primaryStage.show();
-//    }
-//
-//    public void initMouseCont(Group group, Scene scene, Stage stage) {
-//        Rotate xRotate;
-//        Rotate yRotate;
-//        group.getTransforms().addAll(
-//                xRotate = new Rotate(90, Rotate.X_AXIS),
-//                yRotate = new Rotate(90, Rotate.Y_AXIS)
-//        );
-//
-//        xRotate.angleProperty().bind(angleX);
-//        yRotate.angleProperty().bind(angleY);
-//
-//        scene.setOnMousePressed(e -> {
-//            anchorX = e.getSceneX();
-//            anchorY = e.getSceneY();
-//            anchorAngleX = angleX.get();
-//            anchorAngley = angleY.get();
-//        });
-//
-//        scene.setOnMouseDragged(e -> {
-//            angleX.set(anchorAngleX - (anchorY - e.getSceneY()));
-//            angleY.set(anchorAngley + (anchorX - e.getSceneX()));
-//        });
-//
-//        stage.addEventHandler(ScrollEvent.SCROLL, e -> {
-//            double mov = e.getDeltaY();
-//            group.translateZProperty().set(group.getTranslateZ() - ((double) mov / 10));
-//        });
-//    }
-//
-//    public Group loadModel(URL url) {
-//        Group modelRoot = new Group();
-//
-//        ObjModelImporter importer = new ObjModelImporter();
-//        importer.read(url);
-//
-//        for (MeshView meshView : importer.getImport()) {
-//            modelRoot.getChildren().add(meshView);
-//        }
-//
-//        return modelRoot;
-//    }
-//
-//}
-
-
 //end of test code
 
 public class Main extends Application {
     private static final int WIDTH = 800;
     private static final int HEIGHT = 600;
-    protected static final int U_FIELD = 0;
-    protected static final int V_FIELD = 1;
-    protected static final int S_FIELD = 2;
+    protected static final byte U_FIELD = 0;
+    protected static final byte V_FIELD = 1;
+    protected static final byte S_FIELD = 2;
 
     private Canvas canvas;
     private GraphicsContext c;
-    private final float simHeight = 1.1f;
+    private final float simHeight = 1.0f;
     private float cScale;
     private float simWidth;
-//    private float simDepth; //usefull for 3d
     protected static int cnt = 0;
     private Fluid fluid;
     private int framesCount;
@@ -201,13 +106,19 @@ public class Main extends Application {
     private boolean isRecording = false;
     private int resolution = 100;
     private int numIter = 40;
-    private ImageView imgView;
-    private GraphicsContext gc;
+    private Image testIMG;
+    private double aspectRatio;
+    private Thread thread;
+    private final Object lock = new Object();
+    private volatile boolean inSync = false;
+    private float objAngle = 0;
+    private float groundYPos;
 
     @Override
     public void start(Stage primaryStage) {
         canvas = new Canvas(WIDTH, HEIGHT);
         c = canvas.getGraphicsContext2D();
+        c.setImageSmoothing(true);
         cScale = HEIGHT / simHeight;
         simWidth = WIDTH / cScale;
 
@@ -219,14 +130,15 @@ public class Main extends Application {
         Button showVelocityBtn = new Button("Show Velocity");
         Button showSmokeBtn = new Button("Show Smoke");
         Button pauseBtn = new Button("Pause/Resume");
+        Button overRelax = new Button("Overrelax");
+        Button tempBtn = new Button("Temperature");
 
-        Slider objRadSlider = new Slider(0, 20, 15);
-        objRadSlider.setShowTickLabels(true);
-        objRadSlider.setShowTickMarks(true);
-        objRadSlider.setMajorTickUnit(5);
+        Button loadRecordingBtn = new Button("Load Recording");
+        Button groundBtn = new Button("Toggle Ground");
 
         Slider iterSlider = new Slider(0, 100, numIter);
         Slider resSlider = new Slider(0, 500, resolution);
+        Slider objAngleSlider = new Slider(0, 360, objAngle);
 
         iterSlider.setShowTickLabels(true);
         iterSlider.setShowTickMarks(true);
@@ -236,54 +148,57 @@ public class Main extends Application {
         resSlider.setShowTickMarks(true);
         resSlider.setMajorTickUnit(10);
 
+        objAngleSlider.setShowTickLabels(true);
+        objAngleSlider.setShowTickMarks(true);
+        objAngleSlider.setMajorTickUnit(10);
+
         Label fpsLabel = new Label("FPS: 0");
         Label simTimeLabel = new Label("Sim Time: 0ms");
         Button startSim = new Button("Start Simulation");
         Button playRec = new Button("Play Recording");
-//        Button loadObs = new Button("Load Obstacle");
+        Button loadObs = new Button("Load Obstacle");
 
         playRec.setDisable(true);
         playRec.setVisible(false);
 
         startSim.setOnAction(e -> {
-//            savedFrames = null;
             CanvasScene.paused = true;
             showRecordPopUp();
         });
 
-        playRec.setOnAction(e -> {
-            replay();
+        playRec.setOnAction(e -> replay());
+
+        loadObs.setOnAction(e -> {
+            loadImg();
+            setImgObstacle((float) (.5f - (testIMG.getWidth() / (2 * WIDTH))), (float) (.5f + (testIMG.getHeight() / (2 * HEIGHT))), true);
         });
 
-//        loadObs.setOnAction(e -> {
-//            loadImg();
-//        });
-
-        HBox buttonBox = new HBox(10, showStreamlineBtn, showPressureBtn, showVelocityBtn, showSmokeBtn, pauseBtn, objRadSlider, fpsLabel);
+        HBox buttonBox = new HBox(10, showStreamlineBtn, showPressureBtn, showVelocityBtn, showSmokeBtn, overRelax, pauseBtn, tempBtn);
         buttonBox.setAlignment(Pos.CENTER);
-        HBox simOptBox = new HBox(10, iterSlider, resSlider, simTimeLabel, startSim, playRec);
-//        HBox simOptBox = new HBox(10, iterSlider, resSlider, simTimeLabel, startSim, playRec, loadObs);
+        HBox midBox = new HBox(objAngleSlider, groundBtn, fpsLabel, loadRecordingBtn);
+        midBox.setAlignment(Pos.CENTER);
+        HBox simOptBox = new HBox(10, iterSlider, resSlider, simTimeLabel, startSim, playRec, loadObs);
         simOptBox.setAlignment(Pos.CENTER);
 
-        VBox topVbox = new VBox(buttonBox, simOptBox);
+        VBox topVbox = new VBox(buttonBox, midBox, simOptBox);
         topVbox.setAlignment(Pos.CENTER);
 
         VBox sceneBox = new VBox(topVbox, root);
 
-        Scene scene = new Scene(sceneBox, WIDTH, HEIGHT);
+        Scene scene = new Scene(sceneBox);
         primaryStage.setScene(scene);
         primaryStage.setTitle("Fluid Simulation");
         primaryStage.show();
 
+//        loadImg();
         setupScene(1, resolution, numIter);
 
         AnimationTimer timer = new AnimationTimer() {
             @Override
             public void handle(long now) {
-//                long simTimeIni = System.nanoTime();
                 simulate();
-//                long simTimeEnd = System.nanoTime();
-//                simTimeLabel.setText("Sim Time: " + ((simTimeEnd - simTimeIni)/1000000.0) + "ms");
+                long simTimeEnd = System.nanoTime();
+                simTimeLabel.setText(String.format("Sim Time: %.2fms", ((simTimeEnd - now)/1000000.0)));
 
 
                 double deltaTime = (now - lastTime) / 1_000_000_000.0;
@@ -294,12 +209,13 @@ public class Main extends Application {
                     savedFrames.add(new SaveSim());
                     if (framesCount >= simDur) {
                         isRecording = false;
-                        System.out.println("Recording completed");
-//                        setupScene(1, resolution, numIter);
-//                        replay();
                         playRec.setVisible(true);
                         playRec.setDisable(false);
-
+                        try {
+                            saveSimToFile("C:\\Users\\The Workstation\\Documents\\recording.bin");
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         framesCount = 0;
                     }
                 }
@@ -307,39 +223,32 @@ public class Main extends Application {
                 double fps = 1.0 / deltaTime;
                 fpsLabel.setText("FPS: " + String.format("%.2f", fps));
 
-                draw();
+                if (primaryStage.isShowing()) {
+                    draw();
+                }
             }
         };
         timer.start();
 
-        showStreamlineBtn.setOnAction(e -> {
-            CanvasScene.showStreamlines = !CanvasScene.showStreamlines;
-        });
+        showStreamlineBtn.setOnAction(e -> CanvasScene.showStreamlines = !CanvasScene.showStreamlines);
 
-        showPressureBtn.setOnAction(e -> {
-            CanvasScene.showPressure = !CanvasScene.showPressure;
-        });
+        showPressureBtn.setOnAction(e -> CanvasScene.showPressure = !CanvasScene.showPressure);
 
-        showVelocityBtn.setOnAction(e -> {
-           CanvasScene.showVelocities = !CanvasScene.showVelocities;
-        });
+        showVelocityBtn.setOnAction(e -> CanvasScene.showVelocities = !CanvasScene.showVelocities);
 
-        showSmokeBtn.setOnAction(e -> {
-           CanvasScene.showSmoke = !CanvasScene.showSmoke;
-        });
+        showSmokeBtn.setOnAction(e -> CanvasScene.showSmoke = !CanvasScene.showSmoke);
 
-        pauseBtn.setOnAction(e -> {
-            CanvasScene.paused = !CanvasScene.paused;
-        });
+        overRelax.setOnAction(e -> CanvasScene.overRelaxation = CanvasScene.overRelaxation == 1.0f ? 1.9f : 1.0f);
 
-        objRadSlider.setOnMouseReleased(e -> {
-            CanvasScene.obstacleRadius = (float) (objRadSlider.getValue() / 100);
-        });
+        pauseBtn.setOnAction(e -> CanvasScene.paused = !CanvasScene.paused);
+
+        tempBtn.setOnAction(e -> CanvasScene.showTemperature = !CanvasScene.showTemperature);
+
+        groundBtn.setOnAction(e -> {});
 
         resSlider.setOnMouseReleased(e -> {
             resolution = (int) resSlider.getValue();
             setupScene(1, resolution, numIter);
-            System.out.println("Resolution:" + resolution);
         });
 
         iterSlider.setOnMouseReleased(e -> {
@@ -347,8 +256,59 @@ public class Main extends Application {
             setupScene(1, resolution, numIter);
         });
 
+        objAngleSlider.setOnMouseReleased(e -> {
+            objAngle = (float) objAngleSlider.getValue();
+            System.out.println("objAngle: " + objAngle);
+        });
+
+        loadRecordingBtn.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.setTitle("Open Recording File");
+            fileChooser.getExtensionFilters().addAll(new FileChooser.ExtensionFilter("Recording File", "*.bin"));
+
+            File file = fileChooser.showOpenDialog(null);
+
+            if (file != null) {
+                try {
+                    openSim(file.getAbsolutePath());
+                    replay();
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+
         canvas.setOnMousePressed(this::startDrag);
         canvas.setOnMouseDragged(this::drag);
+
+        if (CanvasScene.ground) setGround(.1f);
+
+//        primaryStage.widthProperty().addListener((obs, oldVal, newVal) -> {
+//            CanvasScene.paused = !CanvasScene.paused;
+//            WIDTH = newVal.intValue();
+//
+//            canvas = new Canvas(WIDTH, HEIGHT);
+//            cScale = HEIGHT / simHeight;
+//            simWidth = WIDTH / cScale;
+//            root.getChildren().add(canvas);
+//
+//            setupScene(1, resolution, numIter);
+//            CanvasScene.paused = !CanvasScene.paused;
+//        });
+//
+//        primaryStage.heightProperty().addListener((obs, oldVal, newVal) -> {
+//            CanvasScene.paused = !CanvasScene.paused;
+//            HEIGHT = (int) (newVal.intValue() - 135.5);
+//            SCREEN_HEIGHT = newVal.intValue();
+//
+//            canvas = new Canvas(WIDTH, HEIGHT);
+//            cScale = HEIGHT / simHeight;
+//            simWidth = WIDTH / cScale;
+//            root.getChildren().add(canvas);
+//
+//            setupScene(1, resolution, numIter);
+//            CanvasScene.paused = !CanvasScene.paused;
+//        });
     }
 
     private void showRecordPopUp() {
@@ -366,7 +326,6 @@ public class Main extends Application {
         int numY = (int) (domainHeight / h);
 
         int maxSimDur = (int) ((memUsage[1] * 0.5) / (4 * 4 * (numY * numX * 1.05)));
-        System.out.printf("Max sim dur: %s\n", maxSimDur);
 
         simDur = 1024 > maxSimDur ? (int) (maxSimDur * .5) : 1024;
 
@@ -458,125 +417,8 @@ public class Main extends Application {
         return new long[]{memory.getTotal(), memory.getAvailable(), (memory.getTotal() - memory.getAvailable())};
     }
 
-    //test code for importing and using images as objects
-    //image scaling in simulation/canvas is off: fits to canvas rather than being to scale
-//    private void loadImg() {
-//        FileChooser fileChooser = new FileChooser();
-//        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png", "*.svg"));
-//
-//        File selectedObs = fileChooser.showOpenDialog(null);
-//        if (selectedObs != null) {
-//            try {
-////                String fileExtension = selectedObs.getName().substring(selectedObs.getName().lastIndexOf(".") + 1).toLowerCase();
-////                BufferedImage bufferedImage = ImageIO.read(selectedObs); //not needed yet
-//                Image obsImg = new Image(selectedObs.toURI().toString());
-//                gc = c.getCanvas().getGraphicsContext2D();
-//                imgView = new ImageView(obsImg);
-//                imgView.setPreserveRatio(true);
-//                setObstacle(imgView, true);
-//                applyCObs(obsImg);
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//        }
-//    }
-//
-//    //will be used shortly
-//    private boolean isTransparent(BufferedImage bI) {
-//        int width = bI.getWidth();
-//        int height = bI.getHeight();
-//
-//        for (int x = 0; x < width; x++) {
-//            for (int y = 0; y < height; y++) {
-//                int aplha = (bI.getRGB(x, y) >> 24) & 0xff;
-//                if (aplha < 255) return true;
-//            }
-//        }
-//
-//        return false;
-//    }
-//
-//    private void applyCObs(Image img) {
-//        PixelReader pixelReader = img.getPixelReader();
-//        if (pixelReader == null) return;
-//
-//        int width = (int) img.getWidth();
-//        int height = (int) img.getHeight();
-//
-//        float scaleX = (float) fluid.numX / width;
-//        float scaleY = (float) fluid.numY / height;
-//
-//        for (int x = 0; x < width; x++) {
-//            for (int y = 0; y < height; y++) {
-//                int argb = pixelReader.getArgb(x, y);
-//
-//                int alpha = (argb >> 24) & 0xff;
-//                int red = (argb >> 16) & 0xff;
-//                int green = (argb >> 8) & 0xff;
-//                int blue = (argb) & 0xff;
-//
-//                if (alpha > 0) {
-//                    int flippedY = height - y - 1;
-//
-//                    int gridX = (int) (x * scaleX);
-//                    int gridY = (int) (flippedY * scaleY);
-//
-//                    fluid.s[gridX * fluid.numY + gridY] = 0.0f;
-//                }
-//            }
-//        }
-//    }
-
-//    private void setObstacle(ImageView obstacleImage, boolean reset) {
-//        float vx = 0.0f;
-//        float vy = 0.0f;
-//
-//        // Calculate the obstacle's current position in the simulation grid
-//        float x = (float) (obstacleImage.getTranslateX() + obstacleImage.getFitWidth() / 2);
-//        float y = (float) (obstacleImage.getTranslateY() + obstacleImage.getFitHeight() / 2);
-//
-//        if (!reset) {
-//            vx = (x - CanvasScene.obstacleX) / CanvasScene.dt;
-//            vy = (y - CanvasScene.obstacleY) / CanvasScene.dt;
-//        }
-//
-//        CanvasScene.obstacleX = x;
-//        CanvasScene.obstacleY = y;
-//
-//        // Scale obstacle dimensions to simulation grid
-//        float obstacleWidth = (float) obstacleImage.getFitWidth() / simWidth * fluid.numX;
-//        float obstacleHeight = (float) obstacleImage.getFitHeight() / simHeight * fluid.numY;
-//
-//        int gridWidth = Math.round(obstacleWidth);
-//        int gridHeight = Math.round(obstacleHeight);
-//
-//        // Determine the top-left corner of the obstacle in the grid
-//        int gridStartX = (int) (x / simWidth * fluid.numX) - gridWidth / 2;
-//        int gridStartY = (int) (y / simHeight * fluid.numY) - gridHeight / 2;
-//
-//        // Apply obstacle shape to the simulation grid
-//        for (int i = Math.max(0, gridStartX); i < Math.min(fluid.numX, gridStartX + gridWidth); i++) {
-//            for (int j = Math.max(0, gridStartY); j < Math.min(fluid.numY, gridStartY + gridHeight); j++) {
-//                fluid.s[i * fluid.numY + j] = 0.0f; // Mark as solid
-//                fluid.u[i * fluid.numY + j] = vx;   // Set velocity
-//                fluid.v[i * fluid.numY + j] = vy;
-//
-//                if (CanvasScene.sceneNr == 2) {
-//                    fluid.m[i * fluid.numY + j] = 0.5f + 0.5f * (float) Math.sin(0.1f * CanvasScene.frameNr);
-//                } else {
-//                    fluid.m[i * fluid.numY + j] = 1.0f;
-//                }
-//            }
-//        }
-//
-//        gc.drawImage(imgView.getImage(), gridStartX, gridStartY);
-//
-//        CanvasScene.showObstacle = true;
-//    }
-
     private void setupScene(int sceneNr, int resolution, int numIters) {
         CanvasScene.sceneNr = sceneNr;
-        CanvasScene.obstacleRadius = 0.15f;
         CanvasScene.overRelaxation = 1.9f;
 
         CanvasScene.dt = 1.0f / 60.0f;
@@ -596,19 +438,18 @@ public class Main extends Application {
 
         float density = 1000.0f;
 
-        fluid = new Fluid(density, numX, numY, h);
+        fluid = new Incompressible(density, numX, numY, h);
+//        fluid = new Compressible(density, numX, numY, h);
 
         CanvasScene.fluid = fluid;
 
         int n = fluid.numY;
 
-        if (sceneNr == 0) {    // tank
+        if (sceneNr == 0) {
 
             for (int i = 0; i < fluid.numX; i++) {
                 for (int j = 0; j < fluid.numY; j++) {
-                    float s = 1.0f;  // fluid
-                    if (i == 0 || i == fluid.numX - 1 || j == 0)
-                        s = 0.0f;  // solid
+                    boolean s = i != 0 && i != fluid.numX - 1 && j != 0;
                     fluid.s[i * n + j] = s;
                 }
             }
@@ -617,14 +458,12 @@ public class Main extends Application {
             CanvasScene.showSmoke = false;
             CanvasScene.showStreamlines = false;
             CanvasScene.showVelocities = false;
-        } else if (sceneNr == 1 || sceneNr == 3) { // vortex shedding
+        } else if (sceneNr == 1 || sceneNr == 3) {
 
             float inVel = 2.0f;
             for (int i = 0; i < fluid.numX; i++) {
                 for (int j = 0; j < fluid.numY; j++) {
-                    float s = 1.0f;
-                    if (i == 0 || j == 0 || j == fluid.numY - 1)
-                        s = 0.0f;
+                    boolean s = i != 0 && j != 0 && j != fluid.numY - 1;
                     fluid.s[i * n + j] = s;
 
                     if (i == 1) {
@@ -640,11 +479,9 @@ public class Main extends Application {
             for (int j = minJ; j < maxJ; j++)
                 fluid.m[j] = 0.0f;
 
-            setObstacle(0.4f, 0.5f, true);
-//            if (imgView == null) {
-//                loadImg();
-//            }
-//            setObstacle(imgView,true);
+//            setObstacle(0.4f, 0.5f, true);
+//            setImgObstacle((float) (.5f - (testIMG.getWidth() / (2 * WIDTH))), (float) (.3f + (testIMG.getHeight() / HEIGHT)), true);
+            if (testIMG != null) setImgObstacle((float) (.5f - (testIMG.getWidth() / (2 * WIDTH))), (float) (.5f + (testIMG.getHeight() / (2 * HEIGHT))), true);
 
             CanvasScene.gravity = 0.0f;
             CanvasScene.showPressure = false;
@@ -658,7 +495,7 @@ public class Main extends Application {
                 CanvasScene.showPressure = true;
             }
 
-        } else if (sceneNr == 2) { // paint
+        } else if (sceneNr == 2) {
 
             CanvasScene.gravity = 0.0f;
             CanvasScene.overRelaxation = 1.0f;
@@ -666,11 +503,91 @@ public class Main extends Application {
             CanvasScene.showSmoke = true;
             CanvasScene.showStreamlines = false;
             CanvasScene.showVelocities = false;
-            CanvasScene.obstacleRadius = 0.1f;
         }
     }
 
-    private void setObstacle(float x, float y, boolean reset) {
+//    private void setObstacle(float x, float y, boolean reset) {
+//        float vx = 0.0f;
+//        float vy = 0.0f;
+//
+//        if (!reset) {
+//            vx = (x - CanvasScene.obstacleX) / CanvasScene.dt;
+//            vy = (y - CanvasScene.obstacleY) / CanvasScene.dt;
+//        }
+//
+//        CanvasScene.obstacleX = x;
+//        CanvasScene.obstacleY = y;
+//        float r = CanvasScene.obstacleRadius;
+//
+//        int n = fluid.numY;
+////        float cd = (float) (Math.sqrt(2) * fluid.h);
+//
+//        for (int i = 1; i < fluid.numX - 2; i++) {
+//            for (int j = 1; j < fluid.numY - 2; j++) {
+//
+//                fluid.s[i * n + j] = 1.0f;
+//
+//                float dx = (i + 0.5f) * fluid.h - x;
+//                float dy = (j + 0.5f) * fluid.h - y;
+//
+//                if (dx * dx + dy * dy < r * r) {
+//                    fluid.s[i * n + j] = 0.0f;
+//                    if (CanvasScene.sceneNr == 2)
+//                        fluid.m[i * n + j] = 0.5f + 0.5f * (float) Math.sin(0.1f * CanvasScene.frameNr);
+//                    else
+//                        fluid.m[i * n + j] = 1.0f;
+//                    fluid.u[i * n + j] = vx;
+//                    fluid.u[(i + 1) * n + j] = vx;
+//                    fluid.v[i * n + j] = vy;
+//                    fluid.v[i * n + j + 1] = vy;
+//                }
+//            }
+//        }
+//
+//        CanvasScene.showObstacle = true;
+//    }
+
+    private void saveSimToFile(String fileName) throws IOException {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(fileName))) {
+            oos.writeObject(savedFrames);
+            System.out.println("saved");
+        }
+    }
+
+    private void openSim(String fileName) throws IOException {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(fileName))) {
+            System.out.println("loaded");
+            savedFrames = (LinkedList<SaveSim>) ois.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void loadImg() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Image Files", "*.png"));
+        fileChooser.setTitle("Select Obstacle");
+
+        File file = fileChooser.showOpenDialog(null);
+
+        testIMG = new Image(file.toURI().toString());
+
+        float scale = .75f;
+
+        if (testIMG.getHeight() >= canvas.getHeight() * scale) {
+            testIMG = new Image(file.toURI().toString(), testIMG.getWidth() * 0.5f, testIMG.getHeight() * .5f, false, true);
+        }
+
+        if (testIMG.getWidth() >= canvas.getWidth() * scale) {
+            testIMG = new Image(file.toURI().toString(), testIMG.getWidth() * .5f, testIMG.getHeight() * .5f, false, true);
+        }
+
+        aspectRatio = testIMG.getHeight() / testIMG.getWidth();
+    }
+
+    private void setImgObstacle(float x, float y, boolean reset) {
+        if (testIMG == null) return;
+
         float vx = 0.0f;
         float vy = 0.0f;
 
@@ -681,33 +598,63 @@ public class Main extends Application {
 
         CanvasScene.obstacleX = x;
         CanvasScene.obstacleY = y;
-        float r = CanvasScene.obstacleRadius;
+
+        PixelReader reader = testIMG.getPixelReader();
+
         int n = fluid.numY;
-//        float cd = (float) (Math.sqrt(2) * fluid.h);
+        float h = fluid.h;
 
         for (int i = 1; i < fluid.numX - 2; i++) {
             for (int j = 1; j < fluid.numY - 2; j++) {
+                fluid.s[i * n + j] = true;
 
-                fluid.s[i * n + j] = 1.0f;
+                float xPos = cX(i * h);
+                float yPos = cY(j * h);
 
-                float dx = (i + 0.5f) * fluid.h - x;
-                float dy = (j + 0.5f) * fluid.h - y;
+                if (xPos >= cX(CanvasScene.obstacleX) &&
+                        xPos < cX(CanvasScene.obstacleX) + testIMG.getWidth() &&
+                        yPos >= cY(CanvasScene.obstacleY) &&
+                        yPos < cY(CanvasScene.obstacleY) + testIMG.getHeight()) {
+                    int alphaValue = (reader.getArgb((int) (xPos - cX(CanvasScene.obstacleX)), (int) (yPos - cY(CanvasScene.obstacleY))) >> 24) & 0xff;
 
-                if (dx * dx + dy * dy < r * r) {
-                    fluid.s[i * n + j] = 0.0f;
-                    if (CanvasScene.sceneNr == 2)
-                        fluid.m[i * n + j] = 0.5f + 0.5f * (float) Math.sin(0.1f * CanvasScene.frameNr);
-                    else
-                        fluid.m[i * n + j] = 1.0f;
-                    fluid.u[i * n + j] = vx;
-                    fluid.u[(i + 1) * n + j] = vx;
-                    fluid.v[i * n + j] = vy;
-                    fluid.v[i * n + j + 1] = vy;
+                    if (alphaValue > 0) {
+                        fluid.s[i * n + j] = false;
+                        if (CanvasScene.sceneNr == 2) {
+                            fluid.m[i * n + j] = 0.5f + 0.5f * (float) Math.sin(0.1f * CanvasScene.frameNr);
+                        } else {
+                            fluid.m[i * n + j] = 1.0f;
+                        }
+                        fluid.u[i * n + j] = vx;
+                        fluid.u[(i + 1) * n + j] = vx;
+                        fluid.v[i * n + j] = vy;
+                        fluid.v[i * n + j + 1] = vy;
+                    }
                 }
             }
         }
 
         CanvasScene.showObstacle = true;
+    }
+
+    private void setGround(float y) {
+        groundYPos = y;
+
+        int n = fluid.numY;
+        float h = fluid.h;
+
+        for (int i = 0; i < fluid.numX - 2; i++) {
+            for (int j = 0; j < fluid.numY - 2; j++) {
+//                fluid.s[i * n + j] = true;
+
+                float xPos = cX(i * h);
+                float yPos = cY(j * h);
+
+                if (xPos > 1 && xPos < WIDTH && yPos > cY(groundYPos) && yPos < HEIGHT) {
+                    fluid.s[i * n + j] = false;
+                }
+
+            }
+        }
     }
 
     private void simulate() {
@@ -756,7 +703,7 @@ public class Main extends Application {
                     color[2] = (int) (255 * s);
                     if (CanvasScene.sceneNr == 2)
                         color = getSciColor(s, 0.0f, 1.0f);
-                } else if (f.s[i * n + j] == 0.0f) {
+                } else if (!f.s[i * n + j]) {
                     color[0] = 0;
                     color[1] = 0;
                     color[2] = 0;
@@ -801,8 +748,7 @@ public class Main extends Application {
         }
 
         if (CanvasScene.showStreamlines) {
-            float segLen = f.h * 0.2f;
-            int numSegs = 15;
+            int numSegs = 10;
 
             c.setStroke(Color.BLACK);
 
@@ -817,7 +763,7 @@ public class Main extends Application {
                     for (int z = 0; z < numSegs; z++) {
                         float u = f.sampleField(x, y, U_FIELD);
                         float v = f.sampleField(x, y, V_FIELD);
-                        float l = (float) Math.sqrt(u * u + v * v);
+//                        float l = (float) Math.sqrt(u * u + v * v);
                         x += u * 0.01f;
                         y += v * 0.01f;
                         if (x > f.numX * f.h)
@@ -834,25 +780,25 @@ public class Main extends Application {
         }
 
         if (CanvasScene.showObstacle) {
-            //part of the image importation code, still useful though
-            c.setImageSmoothing(true);
-
-            float r = CanvasScene.obstacleRadius + f.h;
-            c.setFill(CanvasScene.showPressure ? Color.BLACK : Color.rgb(217, 217, 217));
-            c.fillOval(cX(CanvasScene.obstacleX - r), cY(CanvasScene.obstacleY + r), 2 * cScale * r, 2 * cScale * r);
-
             c.setStroke(Color.BLACK);
             c.setLineWidth(3.0);
-            c.strokeOval(cX(CanvasScene.obstacleX - r), cY(CanvasScene.obstacleY + r), 2 * cScale * r, 2 * cScale * r);
+            c.strokeRect(cX(CanvasScene.obstacleX), cY(CanvasScene.obstacleY), testIMG.getWidth(), testIMG.getHeight());
             c.setLineWidth(1.0);
+
+            c.drawImage(testIMG, cX(CanvasScene.obstacleX), cY(CanvasScene.obstacleY));
         }
 
         if (CanvasScene.showPressure) {
             String s = "pressure: " + String.format("%.0f", minP) + " - " + String.format("%.0f", maxP) + " N/m";
-            c.setFill(Color.BLACK);
+            c.setFill(Color.WHITE);
             c.setFont(javafx.scene.text.Font.font("Arial", 16));
             c.fillText(s, 10, 35);
         }
+
+//        if (CanvasScene.ground) {
+//            c.setFill(Color.LIGHTGRAY);
+//            c.fillRect(0, cY(groundYPos), WIDTH, HEIGHT - cY(groundYPos));
+//        }
     }
 
     private int[] getSciColor(float val, float minVal, float maxVal) {
@@ -901,24 +847,19 @@ public class Main extends Application {
     }
 
     private void startDrag(MouseEvent e) {
-        float mx = (float) e.getX() / cScale;
-        float my = (float) (HEIGHT - e.getY()) / cScale;
-        setObstacle(mx, my, true);
-
-        //in testing
-//        setObstacle(imgView, true);
-
+        if (e.isPrimaryButtonDown()) {
+            float mx = (float) e.getX() / cScale;
+            float my = (float) (HEIGHT - e.getY()) / cScale;
+            setImgObstacle(mx, my, true);
+        }
     }
 
     private void drag(MouseEvent e) {
-        float mx = (float) e.getX() / cScale;
-        float my = (float) (HEIGHT - e.getY()) / cScale;
-        setObstacle(mx, my, false);
-
-        //in testing
-//        imgView.setTranslateX(mx);
-//        imgView.setTranslateY(my);
-//        setObstacle(imgView, false);
+        if (e.isPrimaryButtonDown()) {
+            float mx = (float) e.getX() / cScale;
+            float my = (float) (HEIGHT - e.getY()) / cScale;
+            setImgObstacle(mx, my, false);
+        }
     }
 
     public static void main(String[] args) {
@@ -926,11 +867,13 @@ public class Main extends Application {
     }
 }
 
-class Fluid {
+abstract class Fluid {
     float density;
     int numX, numY, numCells;
     float h;
-    float[] u, v, newU, newV, p, s, m, newM;
+    boolean[] s;
+    float[] u, v, newU, newV, p, newP, m, newM, T, newT;
+    float thermalCoef;
 
     public Fluid(float density, int numX, int numY, float h) {
         this.density = density;
@@ -943,53 +886,23 @@ class Fluid {
         this.newU = new float[this.numCells];
         this.newV = new float[this.numCells];
         this.p = new float[this.numCells];
-        this.s = new float[this.numCells];
+        this.s = new boolean[this.numCells];
         this.m = new float[this.numCells];
         this.newM = new float[this.numCells];
+        this.T = new float[this.numCells];
+        this.newT = new float[this.numCells];
+        this.thermalCoef = 0.35f;
         Arrays.fill(this.m, 1.0f);
     }
+
+    public abstract void simulate(float dt, float gravity, int numIters);
 
     public void integrate(float dt, float gravity) {
         int n = this.numY;
         for (int i = 1; i < this.numX; i++) {
             for (int j = 1; j < this.numY - 1; j++) {
-                if (this.s[i * n + j] != 0.0f && this.s[i * n + j - 1] != 0.0f)
+                if (this.s[i * n + j] && this.s[i * n + j - 1])
                     this.v[i * n + j] += gravity * dt;
-            }
-        }
-    }
-
-    public void solveIncompressibility(int numIters, float dt) {
-        int n = this.numY;
-        float cp = this.density * this.h / dt;
-
-        for (int iter = 0; iter < numIters; iter++) {
-            for (int i = 1; i < this.numX - 1; i++) {
-                for (int j = 1; j < this.numY - 1; j++) {
-                    if (this.s[i * n + j] == 0.0f)
-                        continue;
-
-                    float s = this.s[i * n + j];
-                    float sx0 = this.s[(i - 1) * n + j];
-                    float sx1 = this.s[(i + 1) * n + j];
-                    float sy0 = this.s[i * n + j - 1];
-                    float sy1 = this.s[i * n + j + 1];
-                    float sSum = sx0 + sx1 + sy0 + sy1;
-                    if (sSum == 0.0f)
-                        continue;
-
-                    float div = this.u[(i + 1) * n + j] - this.u[i * n + j] +
-                            this.v[i * n + j + 1] - this.v[i * n + j];
-
-                    float p = -div / sSum;
-                    p *= CanvasScene.overRelaxation;
-                    this.p[i * n + j] += cp * p;
-
-                    this.u[i * n + j] -= sx0 * p;
-                    this.u[(i + 1) * n + j] += sx1 * p;
-                    this.v[i * n + j] -= sy0 * p;
-                    this.v[i * n + j + 1] += sy1 * p;
-                }
             }
         }
     }
@@ -1080,7 +993,7 @@ class Fluid {
                 Main.cnt++;
 
                 // u component
-                if (this.s[i * n + j] != 0.0f && this.s[(i - 1) * n + j] != 0.0f && j < this.numY - 1) {
+                if (this.s[i * n + j] && this.s[(i - 1) * n + j] && j < this.numY - 1) {
                     float x = i * h;
                     float y = j * h + h2;
                     float u = this.u[i * n + j];
@@ -1091,7 +1004,7 @@ class Fluid {
                     this.newU[i * n + j] = u;
                 }
                 // v component
-                if (this.s[i * n + j] != 0.0f && this.s[i * n + j - 1] != 0.0f && i < this.numX - 1) {
+                if (this.s[i * n + j] && this.s[i * n + j - 1] && i < this.numX - 1) {
                     float x = i * h + h2;
                     float y = j * h;
                     float u = this.avgU(i, j);
@@ -1117,7 +1030,7 @@ class Fluid {
 
         for (int i = 1; i < this.numX - 1; i++) {
             for (int j = 1; j < this.numY - 1; j++) {
-                if (this.s[i * n + j] != 0.0f) {
+                if (this.s[i * n + j]) {
                     float u = (this.u[i * n + j] + this.u[(i + 1) * n + j]) * 0.5f;
                     float v = (this.v[i * n + j] + this.v[i * n + j + 1]) * 0.5f;
                     float x = i * h + h2 - dt * u;
@@ -1130,8 +1043,22 @@ class Fluid {
         System.arraycopy(this.newM, 0, this.m, 0, this.newM.length);
     }
 
+    public float boolToFloat(boolean b) {
+        return b ? 1.0f : 0.0f;
+    }
+}
+
+class Incompressible extends Fluid {
+    public Incompressible(float density, int numX, int numY, float h) {
+        super(density, numX, numY, h);
+        this.newP = new float[this.numCells];
+    }
+
+    @Override
     public void simulate(float dt, float gravity, int numIters) {
         this.integrate(dt, gravity);
+//        this.computeHeatConduction(dt);
+//        this.advectTemperature(dt);
 
         Arrays.fill(this.p, 0.0f);
         this.solveIncompressibility(numIters, dt);
@@ -1139,6 +1066,100 @@ class Fluid {
         this.extrapolate();
         this.advectVel(dt);
         this.advectSmoke(dt);
+    }
+
+    public void solveIncompressibility(int numIters, float dt) {
+        int n = this.numY;
+        float cp = this.density * this.h / dt;
+
+        for (int iter = 0; iter < numIters; iter++) {
+            for (int i = 1; i < this.numX - 1; i++) {
+                for (int j = 1; j < this.numY - 1; j++) {
+                    if (!this.s[i * n + j])
+                        continue;
+
+                    boolean sx0 = this.s[(i - 1) * n + j];
+                    boolean sx1 = this.s[(i + 1) * n + j];
+                    boolean sy0 = this.s[i * n + j - 1];
+                    boolean sy1 = this.s[i * n + j + 1];
+                    float sSum = boolToFloat(sx0) + boolToFloat(sx1) + boolToFloat(sy0) + boolToFloat(sy1);
+                    if (sSum == 0.0f)
+                        continue;
+
+                    float div = this.u[(i + 1) * n + j] - this.u[i * n + j] +
+                            this.v[i * n + j + 1] - this.v[i * n + j];
+
+                    float p = -div / sSum;
+                    p *= CanvasScene.overRelaxation;
+                    this.p[i * n + j] += cp * p;
+
+                    this.u[i * n + j] -= boolToFloat(sx0) * p;
+                    this.u[(i + 1) * n + j] += boolToFloat(sx1) * p;
+                    this.v[i * n + j] -= boolToFloat(sy0) * p;
+                    this.v[i * n + j + 1] += boolToFloat(sy1) * p;
+                }
+            }
+        }
+    }
+}
+
+//work in progress
+class Compressible extends Fluid {
+    public Compressible(float density, int numX, int numY, float h) {
+        super(density, numX, numY, h);
+        this.newP = new float[this.numCells];
+    }
+
+    @Override
+    public void simulate(float dt, float gravity, int numIters) {
+        this.integrate(dt, gravity);
+
+        Arrays.fill(this.p, 0.0f);
+        this.solveCompressibility(numIters, dt);
+
+        this.extrapolate();
+        this.advectVel(dt);
+        this.advectSmoke(dt);
+    }
+
+    public void solveCompressibility(int numIters, float dt) {
+        int n = this.numY;
+        float cp = this.h / (dt * dt);
+
+        for (int iter = 0; iter < numIters; iter++) {
+
+            float totalDivergence = 0.0f;
+
+            for (int i = 1; i < this.numX - 1; i++) {
+                for (int j = 1; j < this.numY - 1; j++) {
+                    if (!this.s[i * n + j])
+                        continue;
+
+                    // Compute divergence of velocity
+                    float div = this.u[(i + 1) * n + j] - this.u[i * n + j] +
+                            this.v[i * n + j + 1] - this.v[i * n + j];
+
+                    // Update pressure
+                    float pressureUpdate = -div * cp;
+                    this.p[i * n + j] += pressureUpdate;
+
+                    // Adjust velocities
+                    this.u[i * n + j] -= pressureUpdate;
+                    this.u[(i + 1) * n + j] += pressureUpdate;
+                    this.v[i * n + j] -= pressureUpdate;
+                    this.v[i * n + j + 1] += pressureUpdate;
+                }
+            }
+
+//            this.density += -dt * totalDivergence * this.density / (this.numX * this.numY);
+//
+//            float newPressure = (this.density / this.initialDensity) * this.initialPressure;
+//            for (int i = 0; i < this.numX; i++) {
+//                for (int j = 0; j < this.numY; j++) {
+//                    this.p[i * n + j] = newPressure;
+//                }
+//            }
+        }
     }
 }
 
@@ -1150,7 +1171,6 @@ class CanvasScene {
     public static float overRelaxation = 1.9f;
     public static float obstacleX = 0.0f;
     public static float obstacleY = 0.0f;
-    public static float obstacleRadius = 0.15f;
     public static boolean paused = false;
     public static int sceneNr = 0;
     public static boolean showObstacle = false;
@@ -1158,6 +1178,8 @@ class CanvasScene {
     public static boolean showVelocities = false;
     public static boolean showPressure = false;
     public static boolean showSmoke = true;
+    public static boolean showTemperature = false;
     public static Fluid fluid = null;
+    public static boolean ground = false;
 }
 
