@@ -8,7 +8,11 @@ public class SaveSim implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    float[] u, v, p, m;
+    float[] u;
+    float[] v;
+    float[] p;
+    float[] m;
+    private Obstacle[] obstacles;
 
     public SaveSim() {
         this.u = Arrays.copyOf(CanvasScene.fluid.u, CanvasScene.fluid.u.length);

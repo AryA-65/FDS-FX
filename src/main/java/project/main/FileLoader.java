@@ -14,7 +14,6 @@ public class FileLoader {
     public FileLoader(Type fileType, String filePath) {
         this.fileType = fileType;
         this.filePath = filePath;
-        loadFile();
     }
 
     public Type getFileType() {
@@ -34,7 +33,7 @@ public class FileLoader {
             }
             case RECORDING -> {
                 fileChooser.setTitle("Load Recording");
-                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Recording", "*.parquet"));
+                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Recording", "*.bin"));
             }
             case OTHER -> fileChooser.setTitle("Load Other");
             default -> fileChooser.setTitle("Load File");

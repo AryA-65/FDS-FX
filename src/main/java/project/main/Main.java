@@ -3,6 +3,8 @@ package project.main;
 import com.jfoenix.controls.JFXButton;
 
 import javafx.animation.AnimationTimer;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -30,6 +32,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import javafx.util.Duration;
 import oshi.SystemInfo;
 import oshi.hardware.GlobalMemory;
 import oshi.hardware.HardwareAbstractionLayer;
@@ -41,6 +44,8 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledExecutorService;
 
 //TEST code for future auto resolution/iteration settings
 //public class Main extends Application {
@@ -113,6 +118,7 @@ public class Main extends Application {
     private volatile boolean inSync = false;
     private float objAngle = 0;
     private float groundYPos;
+    private Recording recording;
 
     @Override
     public void start(Stage primaryStage) {
@@ -166,6 +172,8 @@ public class Main extends Application {
             showRecordPopUp();
         });
 
+        ComputerInfo ci = new ComputerInfo();
+
         playRec.setOnAction(e -> replay());
 
         loadObs.setOnAction(e -> {
@@ -175,7 +183,7 @@ public class Main extends Application {
 
         HBox buttonBox = new HBox(10, showStreamlineBtn, showPressureBtn, showVelocityBtn, showSmokeBtn, overRelax, pauseBtn, tempBtn);
         buttonBox.setAlignment(Pos.CENTER);
-        HBox midBox = new HBox(objAngleSlider, groundBtn, fpsLabel, loadRecordingBtn);
+        HBox midBox = new HBox(objAngleSlider, groundBtn, fpsLabel, loadRecordingBtn, ci.setCanvas().get(0));
         midBox.setAlignment(Pos.CENTER);
         HBox simOptBox = new HBox(10, iterSlider, resSlider, simTimeLabel, startSim, playRec, loadObs);
         simOptBox.setAlignment(Pos.CENTER);
@@ -189,6 +197,13 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.setTitle("Fluid Simulation");
         primaryStage.show();
+
+        primaryStage.setOnCloseRequest(e -> {
+            Stage stage = new EndSim(PopUpWindow.Type.WARNING, 100, 50);
+            stage.show();
+
+            e.consume();
+        });
 
 //        loadImg();
         setupScene(1, resolution, numIter);
@@ -205,20 +220,21 @@ public class Main extends Application {
                 lastTime = now;
 
                 if (isRecording) {
-                    framesCount++;
-                    savedFrames.add(new SaveSim());
-                    if (framesCount >= simDur) {
+                    Recording.frameCount++;
+                    System.out.println(Recording.frameCount);
+                    Recording.addFrame();
+                    if (Recording.frameCount >= simDur) {
                         isRecording = false;
                         playRec.setVisible(true);
                         playRec.setDisable(false);
-                        try {
-                            saveSimToFile("C:\\Users\\The Workstation\\Documents\\recording.bin");
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                        framesCount = 0;
+
+                        System.out.println(simDur);
+
+                        Recording.frameCount = 0;
                     }
                 }
+
+                ci.update();
 
                 double fps = 1.0 / deltaTime;
                 fpsLabel.setText("FPS: " + String.format("%.2f", fps));
@@ -229,6 +245,8 @@ public class Main extends Application {
             }
         };
         timer.start();
+
+//        ci.startTimeline();
 
         showStreamlineBtn.setOnAction(e -> CanvasScene.showStreamlines = !CanvasScene.showStreamlines);
 
@@ -282,6 +300,8 @@ public class Main extends Application {
         canvas.setOnMouseDragged(this::drag);
 
         if (CanvasScene.ground) setGround(.1f);
+
+        primaryStage.getIcons().add(new Image("/app_ico.png"));
 
 //        primaryStage.widthProperty().addListener((obs, oldVal, newVal) -> {
 //            CanvasScene.paused = !CanvasScene.paused;
@@ -380,6 +400,12 @@ public class Main extends Application {
 
         Scene popUpScene = new Scene(root);
 
+        LinkedList<Obstacle> test = new LinkedList<>();
+
+        test.add(new Obstacle(testIMG));
+
+        recording = new Recording(test);
+
         popUpStage.setScene(popUpScene);
         popUpStage.show();
         popUpStage.setResizable(false);
@@ -388,15 +414,17 @@ public class Main extends Application {
     }
 
     private void replay() {
-        CanvasScene.paused = true;
+//        CanvasScene.paused = true;
+
+        System.out.println(Recording.savedFrames.size());
 
         AnimationTimer replayTimer = new AnimationTimer() {
             int replayIndex = 0;
 
             @Override
             public void handle(long now) {
-                if (replayIndex < savedFrames.size()) {
-                    SaveSim frame = savedFrames.get(replayIndex++);
+                if (replayIndex < Recording.savedFrames.size()) {
+                    Frame frame = Recording.savedFrames.get(replayIndex++);
                     System.arraycopy(frame.u, 0, fluid.u, 0, frame.u.length);
                     System.arraycopy(frame.v, 0, fluid.v, 0, frame.v.length);
                     System.arraycopy(frame.p, 0, fluid.p, 0, frame.p.length);
@@ -782,7 +810,7 @@ public class Main extends Application {
         if (CanvasScene.showObstacle) {
             c.setStroke(Color.BLACK);
             c.setLineWidth(3.0);
-            c.strokeRect(cX(CanvasScene.obstacleX), cY(CanvasScene.obstacleY), testIMG.getWidth(), testIMG.getHeight());
+//            c.strokeRect(cX(CanvasScene.obstacleX), cY(CanvasScene.obstacleY), testIMG.getWidth(), testIMG.getHeight());
             c.setLineWidth(1.0);
 
             c.drawImage(testIMG, cX(CanvasScene.obstacleX), cY(CanvasScene.obstacleY));
@@ -872,11 +900,10 @@ abstract class Fluid {
     int numX, numY, numCells;
     float h;
     boolean[] s;
-    float[] u, v, newU, newV, p, newP, m, newM, T, newT;
+    float[] u, v, newU, newV, p, m, newM, T, newT, densities;
     float thermalCoef;
 
-    public Fluid(float density, int numX, int numY, float h) {
-        this.density = density;
+    public Fluid(int numX, int numY, float h) {
         this.numX = numX + 2;
         this.numY = numY + 2;
         this.numCells = this.numX * this.numY;
@@ -1050,8 +1077,8 @@ abstract class Fluid {
 
 class Incompressible extends Fluid {
     public Incompressible(float density, int numX, int numY, float h) {
-        super(density, numX, numY, h);
-        this.newP = new float[this.numCells];
+        super(numX, numY, h);
+        this.density = density;
     }
 
     @Override
@@ -1105,9 +1132,9 @@ class Incompressible extends Fluid {
 
 //work in progress
 class Compressible extends Fluid {
-    public Compressible(float density, int numX, int numY, float h) {
-        super(density, numX, numY, h);
-        this.newP = new float[this.numCells];
+    public Compressible(float[] density, int numX, int numY, float h) {
+        super(numX, numY, h);
+        this.densities = density;
     }
 
     @Override
@@ -1115,51 +1142,11 @@ class Compressible extends Fluid {
         this.integrate(dt, gravity);
 
         Arrays.fill(this.p, 0.0f);
-        this.solveCompressibility(numIters, dt);
+//        this.solveCompressibility(numIters, dt);
 
         this.extrapolate();
         this.advectVel(dt);
         this.advectSmoke(dt);
-    }
-
-    public void solveCompressibility(int numIters, float dt) {
-        int n = this.numY;
-        float cp = this.h / (dt * dt);
-
-        for (int iter = 0; iter < numIters; iter++) {
-
-            float totalDivergence = 0.0f;
-
-            for (int i = 1; i < this.numX - 1; i++) {
-                for (int j = 1; j < this.numY - 1; j++) {
-                    if (!this.s[i * n + j])
-                        continue;
-
-                    // Compute divergence of velocity
-                    float div = this.u[(i + 1) * n + j] - this.u[i * n + j] +
-                            this.v[i * n + j + 1] - this.v[i * n + j];
-
-                    // Update pressure
-                    float pressureUpdate = -div * cp;
-                    this.p[i * n + j] += pressureUpdate;
-
-                    // Adjust velocities
-                    this.u[i * n + j] -= pressureUpdate;
-                    this.u[(i + 1) * n + j] += pressureUpdate;
-                    this.v[i * n + j] -= pressureUpdate;
-                    this.v[i * n + j + 1] += pressureUpdate;
-                }
-            }
-
-//            this.density += -dt * totalDivergence * this.density / (this.numX * this.numY);
-//
-//            float newPressure = (this.density / this.initialDensity) * this.initialPressure;
-//            for (int i = 0; i < this.numX; i++) {
-//                for (int j = 0; j < this.numY; j++) {
-//                    this.p[i * n + j] = newPressure;
-//                }
-//            }
-        }
     }
 }
 

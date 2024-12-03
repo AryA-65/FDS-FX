@@ -9,6 +9,13 @@ public class Obstacle {
     private int width, height;
     private Image obstacle;
     private Type obstacleType;
+    String obstacleName, obstaclePath;
+    private boolean fixed;
+
+    public Obstacle(Image obstacle) {
+        this.obstacle = obstacle;
+        this.obstaclePath = obstacle.getUrl();
+    }
 
     public Obstacle(float x, float y, Image obstacle) {
         this.x = x;
@@ -31,5 +38,17 @@ public class Obstacle {
 
     public void setObstacleCanvas() {
 
+    }
+
+    public void setObstacleName(String obstacleName) {
+        this.obstacleName = obstacleName;
+    }
+
+    public void setX(float x) {
+        this.x = x;
+    }
+
+    public void setY(float y) {
+        this.y = y;
     }
 }
