@@ -6,8 +6,6 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import static project.main.CanvasSim.draw;
-
 public class Recording implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -46,7 +44,7 @@ public class Recording implements Serializable {
                     System.arraycopy(frame.v, 0, Engine.fluid.v, 0, frame.v.length);
                     System.arraycopy(frame.p, 0, Engine.fluid.p, 0, frame.p.length);
                     System.arraycopy(frame.m, 0, Engine.fluid.m, 0, frame.m.length);
-                    draw();
+//                    Controller.draw();
                 } else {
                     stop();
                 }

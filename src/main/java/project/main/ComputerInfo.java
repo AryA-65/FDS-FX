@@ -1,12 +1,5 @@
 package project.main;
 
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.scene.Node;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.paint.Color;
-import javafx.util.Duration;
 import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GlobalMemory;
@@ -14,9 +7,7 @@ import oshi.hardware.GraphicsCard;
 import oshi.hardware.HardwareAbstractionLayer;
 
 import java.util.*;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class ComputerInfo {
     private static final int UPDATE_PERIOD = 1000;
@@ -33,62 +24,34 @@ public class ComputerInfo {
     ComputerInfo() {
         system = new SystemInfo();
         hardware = system.getHardware();
-        cpu = new CPU(hardware, new Canvas(85,35));
+        cpu = new CPU(hardware);
         gpu = new GPU(hardware);
         memory = new Memory(hardware);
-
-//        service = Executors.newSingleThreadScheduledExecutor();
-
     }
 
-    public void startTimeline() {
-        service.scheduleAtFixedRate(this::update, 0, UPDATE_PERIOD, TimeUnit.MILLISECONDS);
-        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(UPDATE_PERIOD), event -> draw()));
-        timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
+    CPU getCpu() {
+        return cpu;
     }
 
-    public void update() {
-        cpu.getCpuFrequency();
-//        cpu.getCpuUsage(UPDATE_PERIOD);
+    GPU getGpu() {
+        return gpu;
     }
 
-    public void draw() {
-        cpu.draw();
+    Memory getMemory() {
+        return memory;
     }
-
-    public LinkedList<Canvas> setCanvas() {
-        LinkedList<Canvas> nodes = new LinkedList<>();
-
-        nodes.add(cpu.getCanvas());
-
-        return nodes;
-    }
-
 }
 
 class CPU {
     private CentralProcessor cpu;
-    private Canvas canvas;
-    private GraphicsContext gc;
     private double usage;
-    private float frequency, maxFrequency;
+    private float frequency;
     private Queue<Float> frequencyHistory = new LinkedList<>();
 
     CPU(HardwareAbstractionLayer hardware) {
         this.cpu = hardware.getProcessor();
         this.frequency = 0;
         this.usage = 0;
-        this.maxFrequency = cpu.getMaxFreq();
-    }
-
-    CPU(HardwareAbstractionLayer hardware, Canvas canvas) {
-        this.canvas = canvas;
-        this.gc = canvas.getGraphicsContext2D();
-        this.cpu = hardware.getProcessor();
-        this.frequency = 0;
-        this.usage = 0;
-        this.maxFrequency = cpu.getMaxFreq();
     }
 
     public LinkedList<String> getCpuInfo() {
@@ -123,14 +86,6 @@ class CPU {
         frequencyHistory.offer(frequency);
     }
 
-    public void draw() {
-
-    }
-
-    public Canvas getCanvas() {
-        return canvas;
-    }
-
     public double getUsage() {
         return usage;
     }
@@ -141,18 +96,10 @@ class CPU {
 }
 
 class Memory {
-    private GlobalMemory mem;
+    private final GlobalMemory mem;
     private long total, available, inUse;
-    private Canvas canvas;
-    private GraphicsContext gc;
 
     Memory(HardwareAbstractionLayer hardware) {
-        this.mem = hardware.getMemory();
-    }
-
-    Memory(HardwareAbstractionLayer hardware, Canvas canvas) {
-        this.canvas = canvas;
-        this.gc = canvas.getGraphicsContext2D();
         this.mem = hardware.getMemory();
     }
 
@@ -171,9 +118,6 @@ class Memory {
 
     public LinkedList<Long> getMemUsage() {
         LinkedList<Long> memInfo = new LinkedList<>();
-        long total = mem.getTotal();
-        long available = mem.getAvailable();
-        long inUse = total - available;
 
         memInfo.add(total);
         memInfo.add(available);
@@ -181,20 +125,24 @@ class Memory {
 
         return memInfo;
     }
+
+    long getTotal() {
+        return total;
+    }
+
+    long getAvailable() {
+        return available;
+    }
+
+    long getInUse() {
+        return inUse;
+    }
 }
 
 class GPU {
     private List<GraphicsCard> gpu;
-    private Canvas canvas;
-    private GraphicsContext gc;
 
     GPU(HardwareAbstractionLayer hardware) {
-        this.gpu = hardware.getGraphicsCards();
-    }
-
-    GPU(HardwareAbstractionLayer hardware, Canvas canvas) {
-        this.canvas = canvas;
-        this.gc = canvas.getGraphicsContext2D();
         this.gpu = hardware.getGraphicsCards();
     }
 
