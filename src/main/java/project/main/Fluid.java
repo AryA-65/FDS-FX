@@ -69,15 +69,15 @@ public abstract class Fluid {
         float[] f;
 
         switch (field) {
-            case Main.U_FIELD:
+            case Engine.U_FIELD:
                 f = this.u;
                 dy = h2;
                 break;
-            case Main.V_FIELD:
+            case Engine.V_FIELD:
                 f = this.v;
                 dx = h2;
                 break;
-            case Main.S_FIELD:
+            case Engine.S_FIELD:
                 f = this.m;
                 dx = h2;
                 dy = h2;
@@ -133,7 +133,7 @@ public abstract class Fluid {
                     float v = this.avgV(i, j);
                     x = x - dt * u;
                     y = y - dt * v;
-                    u = this.sampleField(x, y, Main.U_FIELD);
+                    u = this.sampleField(x, y, Engine.U_FIELD);
                     this.newU[i * n + j] = u;
                 }
                 // v component
@@ -144,7 +144,7 @@ public abstract class Fluid {
                     float v = this.v[i * n + j];
                     x = x - dt * u;
                     y = y - dt * v;
-                    v = this.sampleField(x, y, Main.V_FIELD);
+                    v = this.sampleField(x, y, Engine.V_FIELD);
                     this.newV[i * n + j] = v;
                 }
             }
@@ -169,7 +169,7 @@ public abstract class Fluid {
                     float x = i * h + h2 - dt * u;
                     float y = j * h + h2 - dt * v;
 
-                    this.newM[i * n + j] = this.sampleField(x, y, Main.S_FIELD);
+                    this.newM[i * n + j] = this.sampleField(x, y, Engine.S_FIELD);
                 }
             }
         }

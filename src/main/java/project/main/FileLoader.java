@@ -12,7 +12,7 @@ public class FileLoader {
     private File file;
     private FileChooser fileChooser;
 
-    FileLoader(Type type) {
+    FileLoader(Type type) { //extend this to FileChooser
         fileChooser = new FileChooser();
         File documentsFolder;
         switch (type) {
@@ -41,14 +41,6 @@ public class FileLoader {
                 fileChooser.setTitle("Select File");
                 file = fileChooser.showOpenDialog(null);
             }
-        }
-    }
-
-    FileLoader() {
-        try {
-//            file = new File();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

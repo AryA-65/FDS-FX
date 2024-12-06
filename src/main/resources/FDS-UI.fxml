@@ -21,7 +21,7 @@
 
 <VBox prefHeight="650.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="project.main.Controller">
    <children>
-      <HBox alignment="CENTER_LEFT" prefHeight="50.0" spacing="10.0">
+      <HBox alignment="CENTER_LEFT" prefHeight="50.0" spacing="10.0" styleClass="infoBar">
          <padding>
             <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
          </padding>
@@ -103,13 +103,13 @@
       <Pane prefHeight="600.0" prefWidth="800.0">
          <children>
             <Canvas fx:id="canvasSim" height="600.0" scaleZ="2.0" width="800.0" />
-            <TabPane fx:id="optionsMenu" layoutX="550.0" prefHeight="600.0" prefWidth="250.0" scaleZ="10.0" tabClosingPolicy="UNAVAILABLE">
+            <TabPane fx:id="optionsMenu" layoutX="550.0" prefHeight="600.0" prefWidth="250.0" scaleZ="10.0" styleClass="expandPane" tabClosingPolicy="UNAVAILABLE">
                <tabs>
                   <Tab fx:id="controlsOptMenu" closable="false" text="Controls">
                      <content>
                         <ScrollPane prefHeight="200.0" prefWidth="200.0">
                            <content>
-                              <VBox prefWidth="236.0">
+                              <VBox prefWidth="236.0" styleClass="scrollVbox">
                                  <children>
                                     <VBox prefWidth="250.0" spacing="10.0">
                                        <padding>
@@ -131,7 +131,7 @@
                                                 <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                                              </padding>
                                           </HBox>
-                                          <Label text="Resolution*">
+                                          <Label text="Resolution">
                                              <font>
                                                 <Font size="15.0" />
                                              </font>
@@ -166,7 +166,7 @@
                                                 </Label>
                                              </children>
                                           </GridPane>
-                                          <Label text="Iterations*">
+                                          <Label text="Iterations">
                                              <font>
                                                 <Font size="15.0" />
                                              </font>
@@ -209,6 +209,47 @@
                                                 <Insets left="10.0" />
                                              </VBox.margin>
                                           </Label>
+                                          <Label text="Fluid Options">
+                                             <font>
+                                                <Font size="15.0" />
+                                             </font>
+                                             <VBox.margin>
+                                                <Insets left="5.0" />
+                                             </VBox.margin>
+                                          </Label>
+                                          <GridPane>
+                                             <columnConstraints>
+                                                <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" />
+                                                <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                             </columnConstraints>
+                                             <rowConstraints>
+                                                <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="10.0" prefHeight="30.0" valignment="CENTER" vgrow="SOMETIMES" />
+                                             </rowConstraints>
+                                             <children>
+                                                <VBox alignment="CENTER" spacing="5.0">
+                                                   <children>
+                                                      <CheckBox fx:id="showSmoke" mnemonicParsing="false" prefHeight="17.0" prefWidth="100.0" text="Show Smoke" />
+                                                      <CheckBox fx:id="showPressure" mnemonicParsing="false" prefHeight="17.0" prefWidth="100.0" text="Show Pressure" />
+                                                   </children>
+                                                </VBox>
+                                                <CheckBox fx:id="showStreamlines" mnemonicParsing="false" text="Show Streamlines" GridPane.columnIndex="1">
+                                                   <GridPane.margin>
+                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                                   </GridPane.margin>
+                                                </CheckBox>
+                                                <CheckBox fx:id="showVelocity" mnemonicParsing="false" text="Show Velocities" GridPane.rowIndex="1">
+                                                   <GridPane.margin>
+                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                                   </GridPane.margin>
+                                                </CheckBox>
+                                                <CheckBox fx:id="overRelax" mnemonicParsing="false" text="Overrelaxation" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                                   <GridPane.margin>
+                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                                   </GridPane.margin>
+                                                </CheckBox>
+                                             </children>
+                                          </GridPane>
                                        </children>
                                     </VBox>
                                     <VBox prefWidth="100.0" spacing="10.0">
@@ -325,59 +366,6 @@
                                           <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
                                        </padding>
                                     </VBox>
-                                    <VBox prefWidth="100.0" spacing="10.0">
-                                       <children>
-                                          <Label text="Video Options">
-                                             <font>
-                                                <Font size="20.0" />
-                                             </font>
-                                          </Label>
-                                          <Label text="Fluid Options">
-                                             <font>
-                                                <Font size="15.0" />
-                                             </font>
-                                             <VBox.margin>
-                                                <Insets left="5.0" />
-                                             </VBox.margin>
-                                          </Label>
-                                          <GridPane>
-                                            <columnConstraints>
-                                              <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" />
-                                              <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                            </columnConstraints>
-                                            <rowConstraints>
-                                              <RowConstraints minHeight="10.0" vgrow="SOMETIMES" />
-                                              <RowConstraints minHeight="10.0" prefHeight="30.0" valignment="CENTER" vgrow="SOMETIMES" />
-                                            </rowConstraints>
-                                             <children>
-                                                <VBox alignment="CENTER_LEFT" spacing="5.0">
-                                                   <children>
-                                                      <CheckBox fx:id="showSmoke" mnemonicParsing="false" prefHeight="17.0" prefWidth="100.0" text="Show Smoke" />
-                                                      <CheckBox fx:id="showPressure" mnemonicParsing="false" prefHeight="17.0" prefWidth="100.0" text="Show Pressure" />
-                                                   </children>
-                                                   <padding>
-                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                                                   </padding>
-                                                </VBox>
-                                                <CheckBox fx:id="showStreamlines" mnemonicParsing="false" text="Show Streamlines" GridPane.columnIndex="1">
-                                                   <GridPane.margin>
-                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                                                   </GridPane.margin></CheckBox>
-                                                <CheckBox fx:id="showVelocity" mnemonicParsing="false" text="Show Velocities" GridPane.rowIndex="1">
-                                                   <GridPane.margin>
-                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                                                   </GridPane.margin></CheckBox>
-                                                <CheckBox fx:id="overRelax" mnemonicParsing="false" text="Overrelaxation" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                                   <GridPane.margin>
-                                                      <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                                                   </GridPane.margin></CheckBox>
-                                             </children>
-                                          </GridPane>
-                                       </children>
-                                       <padding>
-                                          <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-                                       </padding>
-                                    </VBox>
                                  </children></VBox>
                            </content>
                         </ScrollPane>
@@ -387,7 +375,7 @@
                      <content>
                         <ScrollPane prefHeight="200.0" prefWidth="200.0">
                            <content>
-                              <VBox prefHeight="570.0" prefWidth="250.0" />
+                              <VBox prefHeight="570.0" prefWidth="250.0" styleClass="scrollVbox" />
                            </content>
                         </ScrollPane>
                      </content>
@@ -396,7 +384,105 @@
                      <content>
                         <ScrollPane prefHeight="200.0" prefWidth="200.0">
                            <content>
-                              <VBox prefHeight="570.0" prefWidth="250.0" />
+                              <VBox prefWidth="250.0" styleClass="scrollVbox">
+                                 <children>
+                                    <VBox prefWidth="100.0" spacing="10.0">
+                                       <children>
+                                          <Label text="Screen Size">
+                                             <font>
+                                                <Font size="20.0" />
+                                             </font>
+                                          </Label>
+                                          <GridPane>
+                                            <columnConstraints>
+                                              <ColumnConstraints halignment="LEFT" hgrow="SOMETIMES" maxWidth="1.7976931348623157E308" />
+                                              <ColumnConstraints halignment="CENTER" hgrow="SOMETIMES" maxWidth="151.5" minWidth="10.0" prefWidth="147.5" />
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
+                                             <children>
+                                                <Label text="Width:" />
+                                                <Label text="Height:" GridPane.rowIndex="1" />
+                                                <TextField fx:id="screenWidthText" promptText="426-1920 (Default 800)" GridPane.columnIndex="1" />
+                                                <TextField fx:id="screenHeightText" promptText="240-1080 (Default 650)" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                             </children>
+                                             <padding>
+                                                <Insets bottom="10.0" left="10.0" right="10.0" />
+                                             </padding>
+                                          </GridPane>
+                                          <Label text="*Requires restart of application">
+                                             <font>
+                                                <Font size="8.0" />
+                                             </font>
+                                             <VBox.margin>
+                                                <Insets left="10.0" />
+                                             </VBox.margin>
+                                          </Label>
+                                          <Label layoutX="20.0" layoutY="20.0" text="Custom Style">
+                                             <font>
+                                                <Font size="20.0" />
+                                             </font>
+                                             <VBox.margin>
+                                                <Insets bottom="5.0" />
+                                             </VBox.margin>
+                                          </Label>
+                                          <TextField fx:id="customStyleName" editable="false" promptText="default">
+                                             <VBox.margin>
+                                                <Insets left="10.0" right="10.0" />
+                                             </VBox.margin>
+                                          </TextField>
+                                          <HBox alignment="CENTER" prefWidth="200.0" spacing="10.0">
+                                             <VBox.margin>
+                                                <Insets left="10.0" right="10.0" />
+                                             </VBox.margin>
+                                             <children>
+                                                <Button fx:id="loadStyle" mnemonicParsing="false" text="Load" />
+                                                <Button fx:id="applyStyle" mnemonicParsing="false" text="Apply" />
+                                             </children>
+                                          </HBox>
+                                          <Label layoutX="20.0" layoutY="172.0" text="Shortcuts">
+                                             <font>
+                                                <Font size="20.0" />
+                                             </font>
+                                             <VBox.margin>
+                                                <Insets bottom="5.0" />
+                                             </VBox.margin>
+                                          </Label>
+                                          <GridPane>
+                                            <columnConstraints>
+                                              <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                              <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
+                                             <children>
+                                                <Label text="Label" />
+                                                <Label text="Label" GridPane.rowIndex="1" />
+                                                <Label text="Label" GridPane.rowIndex="2" />
+                                             </children>
+                                          </GridPane>
+                                       </children>
+                                       <padding>
+                                          <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                       </padding>
+                                    </VBox>
+                                    <VBox alignment="CENTER" prefWidth="100.0">
+                                       <children>
+                                          <Button fx:id="saveSettings" mnemonicParsing="false" text="Save Settings" />
+                                       </children>
+                                       <VBox.margin>
+                                          <Insets />
+                                       </VBox.margin>
+                                       <padding>
+                                          <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+                                       </padding>
+                                    </VBox>
+                                 </children></VBox>
                            </content>
                         </ScrollPane>
                      </content>
@@ -405,11 +491,11 @@
                      <content>
                         <ScrollPane prefHeight="200.0" prefWidth="200.0">
                            <content>
-                              <VBox prefHeight="570.0" prefWidth="250.0">
+                              <VBox prefWidth="250.0" styleClass="scrollVbox">
                                  <children>
                                     <VBox prefWidth="100.0" spacing="10.0">
                                        <children>
-                                          <Label text="File Loader">
+                                          <Label text="Files">
                                              <font>
                                                 <Font size="20.0" />
                                              </font>
@@ -464,7 +550,7 @@
                   </Tab>
                </tabs>
             </TabPane>
-            <Button fx:id="expandOptionsBtn" layoutX="520.0" maxHeight="30.0" maxWidth="30.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="30.0" translateZ="10.0" />
+            <Button fx:id="expandOptionsBtn" layoutX="518.0" layoutY="2.0" maxHeight="30.0" maxWidth="30.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="30.0" styleClass="expandBtn" translateZ="10.0" />
          </children>
       </Pane>
    </children>

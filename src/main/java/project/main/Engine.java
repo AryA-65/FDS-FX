@@ -7,8 +7,13 @@ import javafx.scene.image.PixelReader;
 import javafx.scene.paint.Color;
 
 public class Engine { //make this non-static
-    public static float gravity = -9.81f, dt, overRelaxation, simWidth, cScale, inVel = 2.0f, density;
+
+    protected static final byte U_FIELD = 0;
+    protected static final byte V_FIELD = 1;
+    protected static final byte S_FIELD = 2;
     public static final float simHeight = 1.0f;
+
+    public static float gravity = -9.81f, dt, overRelaxation, simWidth, cScale, inVel = 2.0f, density;
     public static int numIters = 40, frameNr = 0, sceneNr = 0, resolution = 100;
     public static boolean paused = false, showObstacle = false, showStreamlines = false, showVelocities = false, showPressure = false, showSmoke = true, recording = false, replay;
     public static Fluid fluid;

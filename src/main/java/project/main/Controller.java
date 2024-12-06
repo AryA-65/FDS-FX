@@ -10,17 +10,32 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
+import static project.main.Engine.U_FIELD;
+import static project.main.Engine.V_FIELD;
 import static project.main.Engine.ground;
-import static project.main.Main.U_FIELD;
-import static project.main.Main.V_FIELD;
 
 public class Controller {
+
+
+    @FXML
+    private Button saveSettings;
+    @FXML
+    private TextField screenWidthText;
+    @FXML
+    private TextField screenHeightText;
+    @FXML
+    TextField customStyleName;
+    @FXML
+    private Button loadStyle;
+    @FXML
+    private Button applyStyle;
     @FXML
     TextArea fluidErr;
     @FXML
@@ -101,23 +116,35 @@ public class Controller {
     private Stage rootStage;
 
     private boolean optionsExpanded = true;
-
     private FileLoader fileLoader;
-    private static Obstacle obstacle;
-    private Engine engine;
-    private static Image obstacleImage, modifiedImage;
     private GraphicsContext gc;
-    public static boolean obstacleBounds = false, groundBounds = false;
+    private int HEIGHT, WIDTH;
+    private SetupChecksum setup;
+    private String stylePath;
+
     static String pressure;
 
-    private int HEIGHT = 650, WIDTH = 800;
+    private Engine engine;
+    private static Image obstacleImage, modifiedImage;
+    private static Obstacle obstacle;
+    public static boolean obstacleBounds = false, groundBounds = false;
 
     @FXML
     private void initialize() {
+        setup = new SetupChecksum(SetupChecksum.OS.WINDOWS);
+
+        WIDTH = Integer.parseInt(setup.getSettings().get("Width"));
+        HEIGHT = Integer.parseInt(setup.getSettings().get("Height"));
+
+        if (WIDTH != 800) screenWidthText.setText(String.valueOf(WIDTH));
+        if (HEIGHT != 650) screenHeightText.setText(String.valueOf(HEIGHT));
+
         engine = new Engine(WIDTH, HEIGHT - 50, compMemInfoCanvas);
 
         gc = canvasSim.getGraphicsContext2D();
         gc.setImageSmoothing(true);
+        gc.setFill(Color.WHITE);
+        gc.fillRect(0, 0, WIDTH, HEIGHT - 50);
 
         Engine.showSmoke = true;
         Engine.showObstacle = true;
@@ -142,6 +169,7 @@ public class Controller {
         obsX.setDisable(true);
         obsY.setDisable(true);
         showGround.setDisable(true);
+        applyStyle.setDisable(true);
 
         showSmoke.setSelected(true);
         overRelax.setSelected(true);
@@ -183,11 +211,25 @@ public class Controller {
             checkboxStatus();
         });
 
-        canvasSim.setOnMousePressed(Main::startDrag);
-        canvasSim.setOnMouseDragged(Main::drag);
+        canvasSim.setOnMousePressed(this::startDrag);
+        canvasSim.setOnMouseDragged(this::drag);
 
         loadObsBtn.setOnAction(e -> {
             loadFile();
+        });
+
+        loadStyle.setOnAction(e -> {
+            fileLoader = new FileLoader(FileLoader.Type.STYLE);
+
+            if (fileLoader.returnFile() != null) {
+                stylePath = fileLoader.returnFilePath();
+                customStyleName.setText(stylePath.substring(stylePath.lastIndexOf("\\") + 1, stylePath.lastIndexOf(".")));
+                applyStyle.setDisable(false);
+            }
+        });
+
+        applyStyle.setOnAction(e -> {
+            Main.scene.getStylesheets().add(stylePath);
         });
 
         showGround.setOnAction(e -> {
@@ -326,11 +368,47 @@ public class Controller {
             }
         });
 
+        saveSettings.setOnAction(e -> {
+            int screenHeight = Integer.parseInt(screenHeightText.getText());
+            screenHeight = Math.max(screenHeight, 1080);
+            screenHeight = Math.min(screenHeight, 240);
+
+            setup.getSettings().put("Height", String.valueOf(screenHeight));
+
+            int screenWidth = Integer.parseInt(screenWidthText.getText());
+            screenWidth = Math.max(screenWidth, 1920);
+            screenWidth = Math.min(screenWidth, 426);
+
+            setup.getSettings().put("Width", String.valueOf(screenWidth));
+
+            setup.saveSettings();
+        });
+
         expandErrArea(fileLoaderErr);
         expandErrArea(engineErr);
         expandErrArea(fluidErr);
 
 //
+    }
+
+    public SetupChecksum getSettingsManager() {
+        return setup;
+    }
+
+    private void startDrag(MouseEvent e) {
+        if (e.isPrimaryButtonDown()) {
+            float mx = (float) e.getX() / Engine.cScale;
+            float my = (float) (Engine.getHeight() - e.getY()) / Engine.cScale;
+            Engine.setObstacle(mx, my, true);
+        }
+    }
+
+    private void drag(MouseEvent e) {
+        if (e.isPrimaryButtonDown()) {
+            float mx = (float) e.getX() / Engine.cScale;
+            float my = (float) (Engine.getHeight() - e.getY()) / Engine.cScale;
+            Engine.setObstacle(mx, my, false);
+        }
     }
 
     private void expandErrArea(TextArea errArea) {
@@ -541,7 +619,6 @@ public class Controller {
 
     public void loadFile() {
         fileLoader = new FileLoader(FileLoader.Type.OBSTACLE);
-//        if (fileLoader.returnFile() == null) return;
 
         try {
             obstacleImage = new Image(fileLoader.returnFile().toURI().toString());
