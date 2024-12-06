@@ -11,10 +11,10 @@
 3. Open Intellij (more IDE to be added to the installation guide), click on `⋮` and then open 'edit' under configuration
 4. In the newly opened tab, click on modify options and select 'Add VM Option'
 5. In the VM textfield, add the following: `--module-path "C:\Users\The Workstation\.jdks\javafx-sdk-17.0.13\lib" --add-modules=javafx.controls,javafx.fxml,javafx.graphics`
-6. Click 'Apply', close the tab and then open project structure under the fild dropdown menu
+6. Click 'Apply', close the tab and then open project structure under the filled dropdown menu
 7. Navigate to libraries and press the `+`, select java and navigate to your .jdks folder
-8. Open the downloaded jdk to the lib folder and then select said folder, finish off by appling and closing the tab
-9. Make sure no errors appear in the main class. If errors do appear, try removing the lib folder from the libraries sub-tab and trying steps 7 and 8 again.
+8. Open the downloaded jdk to the lib folder and then select said folder, finish off by applying and closing the tab
+9. Make sure no errors appear in the main class. If errors do appear, try removing the lib folder from the libraries sub-tab and trying steps 7 and 8 again
 
 ## To Do
 Many, many things. Add:
@@ -47,3 +47,9 @@ Many, many things. Add:
 <p align="center">
  <img height="256" width="256" src="https://github.com/AryA-65/FDS-FX/blob/master/resources/fluid.gif">
 </p>
+
+## User Manual
+A step-by-step visual guide for unfamiliar users to make the most out of FDS-FX!
+1. Follow the steps detailed in JDK Installation (see above)
+2. See the visual guide below:
+
