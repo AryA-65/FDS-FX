@@ -56,3 +56,5 @@ A step-by-step visual guide for unfamiliar users to make the most out of FDS-FX!
 ![image](https://github.com/user-attachments/assets/601d6acd-9f19-4bde-950d-5f55c15c1474)
 ![image](https://github.com/user-attachments/assets/e49bac6e-e02a-43a6-a1c5-4a0781d80b9b)
 ![image](https://github.com/user-attachments/assets/829f61a1-a5d2-448a-be0c-8e671776a3f6)
+![image](https://github.com/user-attachments/assets/23ed399e-9d5d-4bc7-864e-73faaceaf2eb)
+![image](https://github.com/user-attachments/assets/00acbd60-a69d-48c4-a098-55bd09be739b)
