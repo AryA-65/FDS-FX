@@ -1,10 +1,7 @@
 package project.main;
 
 import javafx.animation.AnimationTimer;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.image.PixelReader;
-import javafx.scene.paint.Color;
 
 public class Engine { //make this non-static
 
@@ -15,25 +12,18 @@ public class Engine { //make this non-static
 
     public static float gravity = -9.81f, dt, overRelaxation, simWidth, cScale, inVel = 2.0f, density;
     public static int numIters = 40, frameNr = 0, sceneNr = 0, resolution = 100;
-    public static boolean paused = false, showObstacle = false, showStreamlines = false, showVelocities = false, showPressure = false, showSmoke = true, recording = false, replay;
+    public static boolean paused = false, showObstacle = false, showStreamlines = false, showVelocities = false, showPressure = false, showSmoke = true, recording = false, replay = false;
     public static Fluid fluid;
     public static Obstacle ground;
     public static Obstacle obstacle;
+    public static Recording recordingFrame;
 
     private long lastTime = 0;
     private static AnimationTimer simulationTimer;
     private static int WIDTH, HEIGHT;
-    private final ComputerInfo computerInfo;
-    private static Canvas canvas;
-    private GraphicsContext gc;
 
-    Engine(int width, int height, Canvas c) {
-        computerInfo = new ComputerInfo();
-        Engine.canvas = c;
-        gc = canvas.getGraphicsContext2D();
-        gc.setFill(Color.PURPLE);
-
-        int cHeight = (int) canvas.getHeight(), cWidth = (int) canvas.getWidth();
+    Engine(int width, int height) {
+        recordingFrame = new Recording();
 
         density = 1000.0f;
 
@@ -49,30 +39,23 @@ public class Engine { //make this non-static
         simulationTimer = new AnimationTimer() {
             @Override
             public void handle(long l) {
-                Engine.simulate();
-                long simTimeEnd = System.nanoTime();
-                Main.controller.simDurText.setText(String.format("%.2fms", ((simTimeEnd - l)/1000000.0)));
-
-                gc.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
+                if (!Engine.paused) {
+                    Engine.simulate();
+                    long simTimeEnd = System.nanoTime();
+                    Main.controller.simDurText.setText(String.format("%.2fms", ((simTimeEnd - l)/1000000.0)));
+                }
 
                 double deltaTime = (l - lastTime) / 1_000_000_000.0;
                 lastTime = l;
 
                 if (Engine.recording) {
                     Recording.frameCount++;
-                    System.out.println(Recording.frameCount);
                     Recording.addFrame();
                     if (Recording.frameCount >= Recording.maxDuration) {
                         Engine.recording = false;
-
                         Recording.frameCount = 0;
                     }
                 }
-
-                long used = computerInfo.getMemory().getInUse();
-                long total = computerInfo.getMemory().getTotal();
-
-                gc.fillRect(0, cHeight - ((double) used / total * cHeight), cWidth, cHeight);
 
                 Main.controller.pressureInfoText.setText(Controller.pressure);
 
@@ -261,7 +244,7 @@ public class Engine { //make this non-static
         return WIDTH;
     }
 
-    static void setCanvas(Canvas canvas) {
-        Engine.canvas = canvas;
+    public Recording getRecording() {
+        return recordingFrame;
     }
 }

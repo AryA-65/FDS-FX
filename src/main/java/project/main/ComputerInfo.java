@@ -101,6 +101,9 @@ class Memory {
 
     Memory(HardwareAbstractionLayer hardware) {
         this.mem = hardware.getMemory();
+        this.total = mem.getTotal();
+        this.available = mem.getAvailable();
+        this.inUse = total - available;
     }
 
     public LinkedList<String> getMemInfo() {
@@ -136,6 +139,11 @@ class Memory {
 
     long getInUse() {
         return inUse;
+    }
+
+    public void update() {
+        this.available = mem.getAvailable();
+        this.inUse = total - available;
     }
 }
 

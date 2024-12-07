@@ -1,5 +1,6 @@
 package project.main;
 
+import javafx.animation.AnimationTimer;
 import javafx.animation.RotateTransition;
 import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
@@ -12,18 +13,34 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import static project.main.Engine.U_FIELD;
-import static project.main.Engine.V_FIELD;
-import static project.main.Engine.ground;
+import static project.main.Engine.*;
 
 public class Controller {
 
-
+    @FXML
+    private ProgressBar recProgress;
+    @FXML
+    private Text minFrameCount;
+    @FXML
+    private Text maxFrameCount;
+    @FXML
+    private TextField frameCount;
+    @FXML
+    private Button startRec;
+    @FXML
+    private Button delRec;
+    @FXML
+    private Button saveRec;
+    @FXML
+    private Button loadRec;
+    @FXML
+    private Pane mainPane;
     @FXML
     private Button saveSettings;
     @FXML
@@ -121,6 +138,8 @@ public class Controller {
     private int HEIGHT, WIDTH;
     private SetupChecksum setup;
     private String stylePath;
+    private long lastTime = 0;
+    private ComputerInfo computerInfo = new ComputerInfo();
 
     static String pressure;
 
@@ -131,7 +150,11 @@ public class Controller {
 
     @FXML
     private void initialize() {
-        setup = new SetupChecksum(SetupChecksum.OS.WINDOWS);
+        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+            setup = new SetupChecksum(SetupChecksum.OS.WINDOWS);
+        } else if (System.getProperty("os.name").toLowerCase().contains("linux")) {
+            setup = new SetupChecksum(SetupChecksum.OS.LINUX);
+        }
 
         WIDTH = Integer.parseInt(setup.getSettings().get("Width"));
         HEIGHT = Integer.parseInt(setup.getSettings().get("Height"));
@@ -139,12 +162,45 @@ public class Controller {
         if (WIDTH != 800) screenWidthText.setText(String.valueOf(WIDTH));
         if (HEIGHT != 650) screenHeightText.setText(String.valueOf(HEIGHT));
 
-        engine = new Engine(WIDTH, HEIGHT - 50, compMemInfoCanvas);
+        engine = new Engine(WIDTH, HEIGHT - 50);
+        canvasSim.setWidth(WIDTH);
+        canvasSim.setHeight(HEIGHT - 50);
 
         gc = canvasSim.getGraphicsContext2D();
         gc.setImageSmoothing(true);
         gc.setFill(Color.WHITE);
         gc.fillRect(0, 0, WIDTH, HEIGHT - 50);
+
+        GraphicsContext memCanGC = compMemInfoCanvas.getGraphicsContext2D();
+        memCanGC.setFill(Color.BLACK);
+
+        AnimationTimer memUsageMonitor = new AnimationTimer() {
+            @Override
+            public void handle(long l) {
+                if (lastTime == 0) lastTime = l;
+
+                if (l - lastTime >= 1000000000) {
+                    memCanGC.clearRect(0, 0, compMemInfoCanvas.getWidth(), compMemInfoCanvas.getHeight());
+                    computerInfo.getMemory().update();
+                    double percentUsed = ((double) computerInfo.getMemory().getInUse() / computerInfo.getMemory().getTotal());
+                    double height = compMemInfoCanvas.getHeight() * percentUsed;
+
+                    memCanGC.fillRect(0, (compMemInfoCanvas.getHeight() - height), compMemInfoCanvas.getWidth(), compMemInfoCanvas.getHeight());
+                    lastTime = l;
+                }
+
+                if (recordingFrame != null && !Recording.savedFrames.isEmpty() && Recording.savedFrames.size() == Recording.maxDuration && delRec.isDisable() && saveRec.isDisable()) {
+                    delRec.setDisable(false);
+                    saveRec.setDisable(false);
+                    recProgress.setProgress(100);
+                }
+
+                if (recordingFrame != null && !Recording.savedFrames.isEmpty() && Recording.savedFrames.size() == Recording.maxDuration) {
+                    loadRec.setDisable(paused);
+                }
+            }
+        };
+        memUsageMonitor.start();
 
         Engine.showSmoke = true;
         Engine.showObstacle = true;
@@ -159,7 +215,12 @@ public class Controller {
 
         Engine.setupScene(1, Engine.numIters);
 
+        mainPane.setPrefHeight(HEIGHT - 50);
+        mainPane.setPrefWidth(WIDTH);
         expandOptionsBtn.setGraphic(eAView);
+        expandOptionsBtn.setLayoutX(WIDTH - (2 + 263 + 30));
+        optionsMenu.setLayoutX(WIDTH - 263);
+        optionsMenu.setPrefHeight(HEIGHT - 87);
 
         startSim.setDisable(true);
         pauseSim.setDisable(true);
@@ -170,6 +231,10 @@ public class Controller {
         obsY.setDisable(true);
         showGround.setDisable(true);
         applyStyle.setDisable(true);
+        delRec.setDisable(true);
+        loadRec.setDisable(true);
+        startRec.setDisable(true);
+        saveRec.setDisable(true);
 
         showSmoke.setSelected(true);
         overRelax.setSelected(true);
@@ -177,12 +242,33 @@ public class Controller {
         Engine.showSmoke = showSmoke.isSelected();
 
         startSim.setOnAction(e -> {
-            Engine.startSimulation();
-            checkboxStatus();
+            if (!recording) {
+                Engine.startSimulation();
+                checkboxStatus();
+
+                loadRec.setDisable(false);
+                startRec.setDisable(false);
+            }
         });
 
         pauseSim.setOnAction(e -> {
-            Engine.paused = true;
+            if (!recording) Engine.paused = true;
+        });
+
+        startRec.setOnAction(e -> {
+            recProgress.setProgress(ProgressIndicator.INDETERMINATE_PROGRESS);
+            recording = true;
+            loadRec.setDisable(true);
+        });
+
+        loadRec.setOnAction(e -> {
+            Recording.replayRecording();
+        });
+
+        delRec.setOnAction(e -> {
+            recordingFrame.emptyFrames();
+            delRec.setDisable(true);
+            saveRec.setDisable(true);
         });
 
         expandOptionsBtn.setOnAction(e -> {
@@ -205,10 +291,12 @@ public class Controller {
         });
 
         resetSim.setOnAction(e -> {
-            Engine.setupScene(1, Engine.numIters);
-            Engine.setObstacle(obstacle.x, obstacle.y, true);
-            if (showGround.isSelected()) Engine.setGround(ground.y);
-            checkboxStatus();
+            if (!recording) {
+                Engine.setupScene(1, Engine.numIters);
+                Engine.setObstacle(obstacle.x, obstacle.y, true);
+                if (showGround.isSelected()) Engine.setGround(ground.y);
+                checkboxStatus();
+            }
         });
 
         canvasSim.setOnMousePressed(this::startDrag);
@@ -219,12 +307,14 @@ public class Controller {
         });
 
         loadStyle.setOnAction(e -> {
-            fileLoader = new FileLoader(FileLoader.Type.STYLE);
+            if (!recording) {
+                fileLoader = new FileLoader(FileLoader.Type.STYLE);
 
-            if (fileLoader.returnFile() != null) {
-                stylePath = fileLoader.returnFilePath();
-                customStyleName.setText(stylePath.substring(stylePath.lastIndexOf("\\") + 1, stylePath.lastIndexOf(".")));
-                applyStyle.setDisable(false);
+                if (fileLoader.returnFile() != null) {
+                    stylePath = fileLoader.returnFilePath();
+                    customStyleName.setText(stylePath.substring(stylePath.lastIndexOf("\\") + 1, stylePath.lastIndexOf(".")));
+                    applyStyle.setDisable(false);
+                }
             }
         });
 
@@ -233,13 +323,15 @@ public class Controller {
         });
 
         showGround.setOnAction(e -> {
-            if (showGround.isSelected()) {
-                ground = new Obstacle(Float.parseFloat(groundYPos.getText()));
-                Engine.setGround(ground.y);
-            } else {
-                ground = null;
-                Engine.setupScene(1, Engine.numIters);
-                if (obstacle != null) Engine.setObstacle(obstacle.x, obstacle.y, true);
+            if (!recording) {
+                if (showGround.isSelected()) {
+                    ground = new Obstacle(Float.parseFloat(groundYPos.getText()));
+                    Engine.setGround(ground.y);
+                } else {
+                    ground = null;
+                    Engine.setupScene(1, Engine.numIters);
+                    if (obstacle != null) Engine.setObstacle(obstacle.x, obstacle.y, true);
+                }
             }
         });
 
@@ -268,91 +360,113 @@ public class Controller {
         });
 
         overRelax.setOnAction(e -> {
-            if (overRelax.isSelected()) Engine.overRelaxation = 1.9f;
-            else Engine.overRelaxation = 1.0f;
+            if (!recording) {
+                if (overRelax.isSelected()) Engine.overRelaxation = 1.9f;
+                else Engine.overRelaxation = 1.0f;
+            }
         });
 
         obsX.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER && (!obsX.getText().matches("^[^a-zA-Z]*$") || !obsX.getText().isEmpty()) && obstacle != null) {
-                obstacle.x = Math.min(returnFloatValue(obsX.getText()), 1);
-                if (customScale.isSelected()) obstacle.x = Math.max(returnFloatValue(obsX.getText()), (float) (modifiedImage.getHeight() / Engine.getHeight()));
-                else obstacle.x = Math.max(returnFloatValue(obsX.getText()), (float) (obstacleImage.getHeight() / Engine.getHeight()));
-                obsX.setText(String.valueOf(obstacle.x));
-                Engine.setObstacle(obstacle.x, obstacle.y, true);
-                if (ground != null) Engine.setGround(ground.y);
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (!obsX.getText().matches("^[^a-zA-Z]*$") || !obsX.getText().isEmpty()) && obstacle != null) {
+                    obstacle.x = Math.min(returnFloatValue(obsX.getText()), 1);
+                    if (customScale.isSelected()) obstacle.x = Math.max(returnFloatValue(obsX.getText()), (float) (modifiedImage.getHeight() / Engine.getHeight()));
+                    else obstacle.x = Math.max(returnFloatValue(obsX.getText()), (float) (obstacleImage.getHeight() / Engine.getHeight()));
+                    obsX.setText(String.valueOf(obstacle.x));
+                    Engine.setObstacle(obstacle.x, obstacle.y, true);
+                    if (ground != null) Engine.setGround(ground.y);
+                }
             }
         });
 
         obsY.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER && (!obsY.getText().matches("^[^a-zA-Z]*$") || !obsY.getText().isEmpty()) && obstacle != null) {
-                obstacle.y = Math.min(returnFloatValue(obsY.getText()), 1);
-                if (customScale.isSelected()) obstacle.y = Math.max(returnFloatValue(obsY.getText()), (float) (modifiedImage.getHeight() / Engine.getHeight()));
-                else obstacle.y = Math.max(returnFloatValue(obsY.getText()), (float) (obstacleImage.getHeight() / Engine.getHeight()));
-                obsY.setText(String.valueOf(obstacle.y));
-                Engine.setObstacle(obstacle.x, obstacle.y, true);
-                if (ground != null) Engine.setGround(ground.y);
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (!obsY.getText().matches("^[^a-zA-Z]*$") || !obsY.getText().isEmpty()) && obstacle != null) {
+                    obstacle.y = Math.min(returnFloatValue(obsY.getText()), 1);
+                    if (customScale.isSelected()) obstacle.y = Math.max(returnFloatValue(obsY.getText()), (float) (modifiedImage.getHeight() / Engine.getHeight()));
+                    else obstacle.y = Math.max(returnFloatValue(obsY.getText()), (float) (obstacleImage.getHeight() / Engine.getHeight()));
+                    obsY.setText(String.valueOf(obstacle.y));
+                    Engine.setObstacle(obstacle.x, obstacle.y, true);
+                    if (ground != null) Engine.setGround(ground.y);
+                }
             }
         });
 
         resText.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER && (!resText.getText().matches("^[^a-zA-Z]*$") || !resText.getText().isEmpty() || !(resText.getText().equals("0.0")))) {
-                Engine.resolution = Integer.parseInt(resText.getText());
-                Engine.setupScene(1, Engine.numIters);
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (!resText.getText().matches("^[^a-zA-Z]*$") || !resText.getText().isEmpty() || !(resText.getText().equals("0.0")))) {
+                    Engine.resolution = Integer.parseInt(resText.getText());
+                    Engine.setupScene(1, Engine.numIters);
+                }
             }
         });
 
         iterText.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER && (!iterText.getText().matches("^[^a-zA-Z]*$") || !iterText.getText().isEmpty() || !(iterText.getText().equals("0.0")))) {
-                Engine.numIters = Integer.parseInt(iterText.getText());
-                Engine.setupScene(1, Engine.numIters);
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (!iterText.getText().matches("^[^a-zA-Z]*$") || !iterText.getText().isEmpty() || !(iterText.getText().equals("0.0")))) {
+                    Engine.numIters = Integer.parseInt(iterText.getText());
+                    Engine.setupScene(1, Engine.numIters);
+                }
             }
         });
 
         customScale.setOnAction(e -> {
-            customScaleText.setDisable(!customScale.isSelected());
-            if (!customScale.isSelected()) {
-                float xPos = 0.2f, yPos = (float) (.5f + (obstacleImage.getHeight() /  (2 * (HEIGHT - 50))));
+            if (!recording) {
+                customScaleText.setDisable(!customScale.isSelected());
+                if (!customScale.isSelected()) {
+                    float xPos = 0.2f, yPos = (float) (.5f + (obstacleImage.getHeight() /  (2 * (HEIGHT - 50))));
 
-                obstacle = new Obstacle(xPos, yPos, obstacleImage);
+                    obstacle = new Obstacle(xPos, yPos, obstacleImage);
 
-                Engine.obstacle = obstacle;
-                Engine.setupScene(1, Engine.numIters);
-                Engine.setObstacle(obstacle.x, obstacle.y, true);
+                    Engine.obstacle = obstacle;
+                    Engine.setupScene(1, Engine.numIters);
+                    Engine.setObstacle(obstacle.x, obstacle.y, true);
+                }
             }
         });
 
         customScaleText.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER && (!customScaleText.getText().matches("^[^a-zA-Z]*$") || !customScaleText.getText().isEmpty())) {
-                Float scale = returnFloatValue(customScaleText.getText());
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (!customScaleText.getText().matches("^[^a-zA-Z]*$") || !customScaleText.getText().isEmpty())) {
+                    try {
+                        Float scale = returnFloatValue(customScaleText.getText());
 
-                float scaleWidth = (float) obstacleImage.getWidth() * scale, scaleHeight = (float) obstacleImage.getHeight() * scale;
-                modifiedImage = new Image(fileLoader.returnFile().toURI().toString(), scaleWidth, scaleHeight, false, true);
+                        float scaleWidth = (float) obstacleImage.getWidth() * scale, scaleHeight = (float) obstacleImage.getHeight() * scale;
+                        modifiedImage = new Image(fileLoader.returnFile().toURI().toString(), scaleWidth, scaleHeight, false, true);
 
-                float xPos = 0.2f, yPos = (float) (.5f + (modifiedImage.getHeight() /  (2 * (HEIGHT - 50))));
+                        float xPos = 0.2f, yPos = (float) (.5f + (modifiedImage.getHeight() /  (2 * (HEIGHT - 50))));
 
-                obstacle = new Obstacle(xPos, yPos, modifiedImage);
+                        obstacle = new Obstacle(xPos, yPos, modifiedImage);
 
-                Engine.obstacle = obstacle;
-                Engine.setupScene(1, Engine.numIters);
-                Engine.setObstacle(obstacle.x, obstacle.y, true);
-                if (ground != null) Engine.setGround(ground.y);
+                        Engine.obstacle = obstacle;
+                        Engine.setupScene(1, Engine.numIters);
+                        Engine.setObstacle(obstacle.x, obstacle.y, true);
+                        if (ground != null) Engine.setGround(ground.y);
+                    } catch (Exception err) {
+                        fileLoaderErr.setText(err.getMessage());
+                    }
+                }
             }
         });
 
         fluidSpeedText.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER && (!fluidSpeedText.getText().matches("^[^a-zA-Z]*$") || !fluidSpeedText.getText().isEmpty() || !(fluidSpeedText.getText().equals("0.0"))) && obstacleImage != null) {
-                Engine.inVel = returnFloatValue(fluidSpeedText.getText());
-                Engine.setupScene(1, Engine.numIters);
-                Engine.setObstacle(obstacle.x, obstacle.y, true);
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (!fluidSpeedText.getText().matches("^[^a-zA-Z]*$") || !fluidSpeedText.getText().isEmpty() || !(fluidSpeedText.getText().equals("0.0"))) && obstacleImage != null) {
+                    Engine.inVel = returnFloatValue(fluidSpeedText.getText());
+                    Engine.setupScene(1, Engine.numIters);
+                    Engine.setObstacle(obstacle.x, obstacle.y, true);
+                }
             }
         });
 
         fluidDensityText.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER && (!fluidDensityText.getText().matches("^[^a-zA-Z]*$") || !fluidDensityText.getText().isEmpty() || !(fluidSpeedText.getText().equals("0.0"))) && obstacleImage != null) {
-                Engine.density = returnFloatValue(fluidDensityText.getText());
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (!fluidDensityText.getText().matches("^[^a-zA-Z]*$") || !fluidDensityText.getText().isEmpty() || !(fluidSpeedText.getText().equals("0.0"))) && obstacleImage != null) {
+                    Engine.density = returnFloatValue(fluidDensityText.getText());
 
-                Engine.setupScene(1, Engine.numIters);
-                Engine.setObstacle(obstacle.x, obstacle.y, true);
+                    Engine.setupScene(1, Engine.numIters);
+                    Engine.setObstacle(obstacle.x, obstacle.y, true);
+                }
             }
         });
 
@@ -370,18 +484,50 @@ public class Controller {
 
         saveSettings.setOnAction(e -> {
             int screenHeight = Integer.parseInt(screenHeightText.getText());
-            screenHeight = Math.max(screenHeight, 1080);
-            screenHeight = Math.min(screenHeight, 240);
+            screenHeight = Math.min(screenHeight, 1080);
+            screenHeight = Math.max(screenHeight, 240);
 
             setup.getSettings().put("Height", String.valueOf(screenHeight));
 
             int screenWidth = Integer.parseInt(screenWidthText.getText());
-            screenWidth = Math.max(screenWidth, 1920);
-            screenWidth = Math.min(screenWidth, 426);
+            screenWidth = Math.min(screenWidth, 1920);
+            screenWidth = Math.max(screenWidth, 426);
 
             setup.getSettings().put("Width", String.valueOf(screenWidth));
 
+            if (stylePath != null && !stylePath.isEmpty()) setup.getSettings().put("Style", stylePath);
+
             setup.saveSettings();
+        });
+
+        recordingOptMenu.setOnSelectionChanged(event -> {
+            if (recordingOptMenu.isSelected()) {
+                int maxFrames = (int) (computerInfo.getMemory().getAvailable() / (4 * 4 * Incompressible.numCells * 1.1f));
+                int dur = 512;
+                if (dur > maxFrames) dur = maxFrames / 2;
+                int minDur = 128;
+                if (minDur > maxFrames) minDur = maxFrames / 4;
+
+
+                minFrameCount.setText(String.valueOf(minDur));
+                maxFrameCount.setText(String.valueOf(maxFrames));
+                frameCount.setText(String.valueOf(dur));
+
+                Recording.maxDuration = dur;
+            }
+        });
+
+        frameCount.setOnKeyPressed(e -> {
+            if (!recording) {
+                if (e.getCode() == KeyCode.ENTER && (frameCount.getText().matches("^[^a-zA-Z]*$") || !frameCount.getText().isEmpty())) {
+                    int maxFrames = (int) (computerInfo.getMemory().getAvailable() / (4 * 4 * Incompressible.numCells * 1.1f));
+                    int dur = Integer.parseInt(frameCount.getText());
+                    dur = Math.min(dur, maxFrames);
+                    dur = Math.max(128, dur);
+
+                    Recording.maxDuration = dur;
+                }
+            }
         });
 
         expandErrArea(fileLoaderErr);
@@ -396,18 +542,26 @@ public class Controller {
     }
 
     private void startDrag(MouseEvent e) {
-        if (e.isPrimaryButtonDown()) {
-            float mx = (float) e.getX() / Engine.cScale;
-            float my = (float) (Engine.getHeight() - e.getY()) / Engine.cScale;
-            Engine.setObstacle(mx, my, true);
+        if (e.isPrimaryButtonDown() && obstacle != null && !recording) {
+            try {
+                float mx = (float) e.getX() / Engine.cScale;
+                float my = (float) (Engine.getHeight() - e.getY()) / Engine.cScale;
+                Engine.setObstacle(mx, my, true);
+            } catch (Exception err) {
+                engineErr.setText(err.getMessage());
+            }
         }
     }
 
     private void drag(MouseEvent e) {
-        if (e.isPrimaryButtonDown()) {
-            float mx = (float) e.getX() / Engine.cScale;
-            float my = (float) (Engine.getHeight() - e.getY()) / Engine.cScale;
-            Engine.setObstacle(mx, my, false);
+        if (e.isPrimaryButtonDown() && obstacle != null && !recording) {
+            try {
+                float mx = (float) e.getX() / Engine.cScale;
+                float my = (float) (Engine.getHeight() - e.getY()) / Engine.cScale;
+                Engine.setObstacle(mx, my, false);
+            } catch (Exception err) {
+                engineErr.setText(err.getMessage());
+            }
         }
     }
 
@@ -450,7 +604,7 @@ public class Controller {
         float minP = f.p[0];
         float maxP = f.p[0];
 
-        for (int i = 0; i < f.numCells; i++) {
+        for (int i = 0; i < Fluid.numCells; i++) {
             minP = Math.min(minP, f.p[i]);
             maxP = Math.max(maxP, f.p[i]);
         }

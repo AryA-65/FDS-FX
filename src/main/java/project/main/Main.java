@@ -4,19 +4,16 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.*;
 import javafx.scene.image.Image;
-import javafx.scene.input.KeyCode;
 import javafx.stage.Stage;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Main extends Application {
     static Stage root;
     static Scene scene;
     static Controller controller;
 
-    static final Set<KeyCode> keyPresses = new HashSet<>();
+//    static final Set<KeyCode> keyPresses = new HashSet<>();
 
     @Override
     public void start(Stage stage) throws IOException {
@@ -30,14 +27,18 @@ public class Main extends Application {
 
         scene = new Scene(test);
 
-        scene.setOnKeyPressed(e -> {
-            keyPresses.add(e.getCode());
-            checkKeysPressed();
-        });
+//        scene.setOnKeyPressed(e -> {
+//            keyPresses.add(e.getCode());
+//            checkKeysPressed();
+//        });
 
-        scene.getStylesheets().add(controller.getSettingsManager().getSettings().get("Style"));
+        scene.getStylesheets().add(new File(controller.getSettingsManager().getSettings().get("Style")).toURI().toString());
 
         stage.setScene(scene);
+
+        stage.setHeight(Double.parseDouble(controller.getSettingsManager().getSettings().get("Height")));
+        stage.setWidth(Double.parseDouble(controller.getSettingsManager().getSettings().get("Width")));
+
         stage.setResizable(false);
         stage.setMaximized(false);
         stage.setTitle("Fluid Simulation");
@@ -45,16 +46,16 @@ public class Main extends Application {
         stage.show();
     }
 
-    public void checkKeysPressed() {
-        if (keyPresses.contains(KeyCode.CONTROL) && keyPresses.contains(KeyCode.SHIFT)) {
-            if (keyPresses.contains(KeyCode.S)) {//show smoke
-//            controller.
-            }
-            if (keyPresses.contains(KeyCode.A)) {//show pressure
-
-            }
-        }
-    }
+//    public void checkKeysPressed() {
+//        if (keyPresses.contains(KeyCode.CONTROL) && keyPresses.contains(KeyCode.SHIFT)) {
+//            if (keyPresses.contains(KeyCode.S)) {//show smoke
+////            controller.
+//            }
+//            if (keyPresses.contains(KeyCode.A)) {//show pressure
+//
+//            }
+//        }
+//    }
 
     public static Stage getRoot() {
         return root;

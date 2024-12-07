@@ -28,11 +28,7 @@ public class SetupChecksum {
             File fdsRec = new File(System.getProperty("user.home") + "/Documents/FDS-FX/Recordings");
             File fdsCss = new File(System.getProperty("user.home") + "/Documents/FDS-FX/Styles");
 
-            try {
-                settings.put("Style", fdsCss.getAbsolutePath() + "\\default.css");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            settings.put("Style", "C:\\Users\\The Workstation\\Documents\\FDS-FX\\Styles\\default.css");
 
             settingsManager = new SettingsManager(appSettings.getAbsolutePath());
 
@@ -53,6 +49,9 @@ public class SetupChecksum {
             //no linux support for now
 
         }
+
+        assert settingsManager != null;
+        settings = settingsManager.getSettings();
     }
 
     private Boolean checkExistence(File file) {
@@ -82,7 +81,7 @@ class SettingsManager {
         System.out.println(SETTINGS_FILE);
     }
 
-    public HashMap<String, String> getSettings() {
+    public LinkedHashMap<String, String> getSettings() {
         Gson gson = new Gson();
         try (FileReader fr = new FileReader(SETTINGS_FILE)) {
             Type type = new TypeToken<LinkedHashMap<String, String>>() {}.getType();

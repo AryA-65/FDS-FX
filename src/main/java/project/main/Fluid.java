@@ -5,7 +5,9 @@ import java.util.Objects;
 
 public abstract class Fluid {
     float density;
-    int numX, numY, numCells;
+    int numX;
+    int numY;
+    static int numCells;
     float h;
     boolean[] s;
     float[] u, v, newU, newV, p, m, newM, T, newT;
